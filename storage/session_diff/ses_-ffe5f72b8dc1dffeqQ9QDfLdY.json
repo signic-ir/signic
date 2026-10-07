@@ -1,0 +1,93 @@
+[
+  {
+    "file": "__pycache__/agent.cpython-313.pyc",
+    "patch": "",
+    "additions": 0,
+    "deletions": 0,
+    "status": "added"
+  },
+  {
+    "file": "agent.py",
+    "patch": "Index: agent.py\n===================================================================\n--- agent.py\t\n+++ agent.py\t\n@@ -1,152 +1,159 @@\n #!/usr/bin/env python3\n import os\n import yaml\n import threading\n import time\n from flask import Flask, jsonify, Response\n from collectors.system import SystemCollector\n from collectors.process import ProcessCollector\n from exporters.prometheus import PrometheusExporter\n from exporters.telegram import TelegramExporter\n+from collectors.http_health import HttpHealthCollector\n \n app = Flask(__name__)\n \n CONFIG_PATH = os.path.join(os.path.dirname(__file__), 'config.yaml')\n \n class MetricsAgent:\n     def __init__(self):\n         with open(CONFIG_PATH, 'r') as f:\n             self.config = yaml.safe_load(f)\n         \n         self.system_collector = SystemCollector()\n         self.process_collector = ProcessCollector(\n             self.config.get('collectors', {}).get('process', {}).get('watch', [])\n         )\n+        external_config = self.config.get('collectors', {}).get('external_server', {})\n+        self.http_health_collector = HttpHealthCollector(\n+            target_host=external_config.get('host', '185.18.215.60'),\n+            target_port=external_config.get('port', 80),\n+        )\n         self.prometheus_exporter = PrometheusExporter()\n         self.telegram_exporter = TelegramExporter(self.config.get('exporters', {}).get('telegram', {}))\n         \n         self.metrics = {}\n         self.lock = threading.Lock()\n         self.running = True\n         \n     def collect_loop(self):\n         interval = self.config.get('collectors', {}).get('interval', 5)\n         while self.running:\n             try:\n                 with self.lock:\n                     self.metrics = {\n                         'system': self.system_collector.collect(),\n                         'process': self.process_collector.collect(),\n+                        'external_server': self.http_health_collector.collect(),\n                         'timestamp': time.time()\n                     }\n             except Exception as e:\n                 print(f\"Collection error: {e}\")\n             time.sleep(interval)\n     \n     def start(self):\n         thread = threading.Thread(target=self.collect_loop, daemon=True)\n         thread.start()\n         \n     def stop(self):\n         self.running = False\n \n agent = MetricsAgent()\n \n @app.route('/health')\n def health():\n     return jsonify({\n         'status': 'ok',\n         'timestamp': time.time()\n     })\n \n @app.route('/metrics')\n def metrics():\n     with agent.lock:\n         metrics_data = agent.metrics\n     return Response(\n         agent.prometheus_exporter.export(metrics_data),\n         mimetype='text/plain'\n     )\n \n @app.route('/metrics/json')\n def metrics_json():\n     with agent.lock:\n         return jsonify(agent.metrics)\n \n @app.route('/system')\n def system():\n     with agent.lock:\n         return jsonify(agent.metrics.get('system', {}))\n \n @app.route('/process')\n def process():\n     with agent.lock:\n         return jsonify(agent.metrics.get('process', {}))\n \n @app.route('/alerts/send', methods=['POST'])\n def send_alert():\n     from flask import request\n     data = request.get_json() or {}\n     message = data.get('message', 'Alert from metrics agent')\n     \n     success = agent.telegram_exporter.send(message)\n     return jsonify({'success': success})\n \n @app.route('/alerts/test')\n def test_alert():\n     success = agent.telegram_exporter.send(\"Test alert from metrics agent\")\n     return jsonify({'success': success})\n \n @app.route('/alerts/webhook', methods=['POST'])\n def prometheus_webhook():\n     from flask import request\n     data = request.get_json() or {}\n     alerts = data.get('alerts', [])\n     \n     for alert in alerts:\n         if alert.get('status') == 'firing':\n             summary = alert.get('annotations', {}).get('summary', 'Alert')\n             description = alert.get('annotations', {}).get('description', '')\n             message = f\"🚨 {summary}\\n{description}\"\n             agent.telegram_exporter.send(message)\n         elif alert.get('status') == 'resolved':\n             summary = alert.get('annotations', {}).get('summary', 'Alert')\n             message = f\"✅ Resolved: {summary}\"\n             agent.telegram_exporter.send(message)\n     \n     return jsonify({'received': len(alerts)})\n \n if __name__ == '__main__':\n     agent.start()\n     host = agent.config.get('app', {}).get('host', '0.0.0.0')\n     port = agent.config.get('app', {}).get('port', 5000)\n     print(f\"Starting metrics agent on {host}:{port}\")\n     \n     import os\n     if os.environ.get('FLASK_ENV') == 'production':\n         from gunicorn.app.base import BaseApplication\n         \n         class StandaloneApplication(BaseApplication):\n             def __init__(self, app, options=None):\n                 self.options = options or {}\n                 self.application = app\n                 super().__init__()\n             \n             def load_config(self):\n                 config = {key: value for key, value in self.options.items()\n                          if key in self.cfg.settings and value is not None}\n                 for key, value in config.items():\n                     self.cfg.set(key, value)\n             \n             def load(self):\n                 return self.application\n         \n         options = {\n             'bind': f'{host}:{port}',\n             'workers': 2,\n             'threads': 4,\n             'timeout': 30,\n         }\n         StandaloneApplication(app, options).run()\n     else:\n         app.run(host=host, port=port, debug=False)\n",
+    "additions": 7,
+    "deletions": 0,
+    "status": "modified"
+  },
+  {
+    "file": "collectors/__pycache__/__init__.cpython-313.pyc",
+    "patch": "",
+    "additions": 0,
+    "deletions": 0,
+    "status": "added"
+  },
+  {
+    "file": "collectors/__pycache__/http_health.cpython-313.pyc",
+    "patch": "",
+    "additions": 0,
+    "deletions": 0,
+    "status": "added"
+  },
+  {
+    "file": "collectors/__pycache__/process.cpython-313.pyc",
+    "patch": "",
+    "additions": 0,
+    "deletions": 0,
+    "status": "added"
+  },
+  {
+    "file": "collectors/__pycache__/system.cpython-313.pyc",
+    "patch": "",
+    "additions": 0,
+    "deletions": 0,
+    "status": "added"
+  },
+  {
+    "file": "collectors/http_health.py",
+    "patch": "Index: collectors/http_health.py\n===================================================================\n--- collectors/http_health.py\t\n+++ collectors/http_health.py\t\n@@ -0,0 +1,50 @@\n+#!/usr/bin/env python3\n+\"\"\"HTTP health check collector for external server monitoring.\"\"\"\n+\n+import time\n+from typing import Dict, Any\n+\n+from collectors.system import SystemCollector\n+from collectors.process import ProcessCollector\n+\n+class HttpHealthCollector:\n+    \"\"\"Collects HTTP health metrics from an external server.\"\"\"\n+\n+    def __init__(self, target_host: str = \"185.18.215.60\", target_port: int = 80):\n+        self.target_host = target_host\n+        self.target_port = target_port\n+        self.metrics = {\n+            \"http_server_status\": 0,\n+            \"http_response_time_ms\": 0,\n+            \"http_status_code\": 0,\n+            \"last_check\": 0,\n+        }\n+\n+    def collect(self) -> Dict[str, Any]:\n+        \"\"\"Collect health metrics from the target server.\"\"\"\n+        start = time.time()\n+        try:\n+            import requests\n+            response = requests.get(\n+                f\"http://{self.target_host}:{self.target_port}\",\n+                timeout=10,\n+            )\n+            elapsed = (time.time() - start) * 1000\n+            status = response.status_code\n+            self.metrics[\"http_response_time_ms\"] = round(elapsed, 2)\n+            self.metrics[\"http_status_code\"] = status\n+            self.metrics[\"last_check\"] = time.time()\n+            return self.metrics\n+        except Exception as e:\n+            self.metrics[\"http_response_time_ms\"] = 0\n+            self.metrics[\"http_status_code\"] = 0\n+            self.metrics[\"last_check\"] = time.time()\n+            raise\n+\n+    def get_metrics(self) -> Dict[str, Any]:\n+        \"\"\"Get the latest collected metrics.\"\"\"\n+        return self.metrics.copy()\n+\n+\n+# Initialize the collector\n+HEALTH_COLLECTOR = HttpHealthCollector()\n",
+    "additions": 50,
+    "deletions": 0,
+    "status": "added"
+  },
+  {
+    "file": "config.yaml",
+    "patch": "Index: config.yaml\n===================================================================\n--- config.yaml\t\n+++ config.yaml\t\n@@ -1,32 +1,37 @@\n app:\n   host: \"0.0.0.0\"\n   port: 5000\n   api_key: \"change-me-in-production\"\n \n collectors:\n   interval: 5\n   system:\n     enabled: true\n     metrics:\n       - cpu_percent\n       - memory_percent\n       - disk_usage\n       - network_io\n       - load_average\n   process:\n     enabled: true\n     watch:\n       - python\n       - node\n       - npm\n+  external_server:\n+    enabled: true\n+    host: \"185.18.215.60\"\n+    port: 80\n+    timeout: 10\n \n exporters:\n   prometheus:\n     enabled: true\n   telegram:\n     enabled: false\n     bot_token: \"\"\n     chat_id: \"\"\n   webhook:\n     enabled: false\n     url: \"\"\n",
+    "additions": 5,
+    "deletions": 0,
+    "status": "modified"
+  },
+  {
+    "file": "exporters/__pycache__/__init__.cpython-313.pyc",
+    "patch": "",
+    "additions": 0,
+    "deletions": 0,
+    "status": "added"
+  },
+  {
+    "file": "exporters/__pycache__/prometheus.cpython-313.pyc",
+    "patch": "",
+    "additions": 0,
+    "deletions": 0,
+    "status": "added"
+  },
+  {
+    "file": "exporters/prometheus.py",
+    "patch": "Index: exporters/prometheus.py\n===================================================================\n--- exporters/prometheus.py\t\n+++ exporters/prometheus.py\t\n@@ -1,52 +1,70 @@\n class PrometheusExporter:\n     def __init__(self):\n         self.metric_template = \"\"\"# HELP system_cpu_percent CPU usage percentage\n # TYPE system_cpu_percent gauge\n system_cpu_percent {cpu_percent}\n \n # HELP system_memory_percent Memory usage percentage\n # TYPE system_memory_percent gauge\n system_memory_percent {memory_percent}\n \n # HELP system_memory_used Memory used in bytes\n # TYPE system_memory_used gauge\n system_memory_used {memory_used}\n \n # HELP system_disk_percent Disk usage percentage\n # TYPE system_disk_percent gauge\n system_disk_percent {disk_percent}\n \n # HELP system_load_1min Load average 1 minute\n # TYPE system_load_1min gauge\n system_load_1min {load_1min}\n \n # HELP system_load_5min Load average 5 minutes\n # TYPE system_load_5min gauge\n system_load_5min {load_5min}\n \n # HELP system_uptime_seconds System uptime in seconds\n # TYPE system_uptime_seconds counter\n system_uptime_seconds {uptime}\n \n # HELP process_count Number of watched processes\n # TYPE process_count gauge\n process_count {process_count}\n+\n+# HELP http_server_up Whether the external server is reachable (1=up, 0=down)\n+# TYPE http_server_up gauge\n+http_server_up {http_server_up}\n+\n+# HELP http_response_time_ms HTTP response time in milliseconds\n+# TYPE http_response_time_ms gauge\n+http_response_time_ms {http_response_time_ms}\n+\n+# HELP http_status_code HTTP status code from the external server\n+# TYPE http_status_code gauge\n+http_status_code {http_status_code}\n \"\"\"\n     \n     def export(self, metrics):\n         if not metrics or 'system' not in metrics:\n             return \"# No metrics available\\n\"\n         \n         system = metrics.get('system', {})\n         process = metrics.get('process', {})\n+        external = metrics.get('external_server', {})\n         \n+        http_server_up = 1 if external.get('http_status_code', 0) and 200 <= external.get('http_status_code', 0) < 400 else 0\n+        \n         return self.metric_template.format(\n             cpu_percent=system.get('cpu_percent', 0),\n             memory_percent=system.get('memory', {}).get('percent', 0),\n             memory_used=system.get('memory', {}).get('used', 0),\n             disk_percent=system.get('disk', {}).get('percent', 0),\n             load_1min=system.get('load_average', {}).get('1min', 0),\n             load_5min=system.get('load_average', {}).get('5min', 0),\n             uptime=system.get('uptime', 0),\n-            process_count=process.get('count', 0)\n+            process_count=process.get('count', 0),\n+            http_server_up=http_server_up,\n+            http_response_time_ms=external.get('http_response_time_ms', 0),\n+            http_status_code=external.get('http_status_code', 0)\n         )\n",
+    "additions": 19,
+    "deletions": 1,
+    "status": "modified"
+  },
+  {
+    "file": "prometheus/alerts.yml",
+    "patch": "Index: prometheus/alerts.yml\n===================================================================\n--- prometheus/alerts.yml\t\n+++ prometheus/alerts.yml\t\n@@ -1,38 +1,65 @@\n groups:\n   - name: system_alerts\n     rules:\n       - alert: HighCPUUsage\n         expr: system_cpu_percent > 85\n         for: 2m\n         labels:\n           severity: warning\n         annotations:\n           summary: \"High CPU usage detected\"\n           description: \"CPU usage is above 85% for 2 minutes\"\n \n       - alert: HighMemoryUsage\n         expr: system_memory_percent > 90\n         for: 2m\n         labels:\n           severity: critical\n         annotations:\n           summary: \"High memory usage detected\"\n           description: \"Memory usage is above 90% for 2 minutes\"\n \n       - alert: HighDiskUsage\n         expr: system_disk_percent > 90\n         for: 5m\n         labels:\n           severity: warning\n         annotations:\n           summary: \"Disk almost full\"\n           description: \"Disk usage is above 90%\"\n \n       - alert: HighLoadAverage\n         expr: system_load_5min > 4\n         for: 5m\n         labels:\n           severity: warning\n         annotations:\n           summary: \"High load average\"\n           description: \"5-minute load average is above 4\"\n+\n+      - alert: ExternalServerDown\n+        expr: http_server_up == 0\n+        for: 2m\n+        labels:\n+          severity: critical\n+        annotations:\n+          summary: \"External server down\"\n+          description: \"Server 185.18.215.60 is unreachable or returning errors\"\n+\n+      - alert: HighExternalServerResponseTime\n+        expr: http_response_time_ms > 2000\n+        for: 2m\n+        labels:\n+          severity: warning\n+        annotations:\n+          summary: \"High external server response time\"\n+          description: \"Response time to 185.18.215.60 is above 2 seconds\"\n+\n+      - alert: ExternalServerBadStatus\n+        expr: http_status_code != 200 and http_status_code != 0\n+        for: 1m\n+        labels:\n+          severity: warning\n+        annotations:\n+          summary: \"External server returning bad status\"\n+          description: \"Server 185.18.215.60 returned status {{ $value }}\"\n",
+    "additions": 27,
+    "deletions": 0,
+    "status": "modified"
+  },
+  {
+    "file": "prometheus/prometheus.yml",
+    "patch": "Index: prometheus/prometheus.yml\n===================================================================\n--- prometheus/prometheus.yml\t\n+++ prometheus/prometheus.yml\t\n@@ -1,27 +1,29 @@\n global:\n   scrape_interval: 15s\n   evaluation_interval: 15s\n \n scrape_configs:\n   - job_name: 'metrics-agent'\n     static_configs:\n       - targets: ['agent:5000']\n     metrics_path: /metrics\n     scrape_interval: 10s\n \n   - job_name: 'node-exporter'\n     static_configs:\n       - targets: ['node-exporter:9100']\n     scrape_interval: 15s\n \n   - job_name: 'prometheus'\n     static_configs:\n       - targets: ['localhost:9090']\n+    metrics_path: /metrics\n+    scrape_interval: 15s\n \n rule_files:\n   - \"alerts.yml\"\n \n alerting:\n   alertmanagers:\n     - static_configs:\n         - targets: ['alertmanager:9093']\n",
+    "additions": 2,
+    "deletions": 0,
+    "status": "modified"
+  }
+]

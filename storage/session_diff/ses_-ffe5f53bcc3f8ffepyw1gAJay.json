@@ -1,0 +1,9 @@
+[
+  {
+    "file": "docker-compose.yml",
+    "patch": "Index: docker-compose.yml\n===================================================================\n--- docker-compose.yml\t\n+++ docker-compose.yml\t\n@@ -1,40 +1,40 @@\n services:\n   # Expo Mobile App (Development)\n   mobile-app:\n-    image:expo/expo:latest\n+    build: .\n     container_name: cargo-mobile-app\n     ports:\n       - \"8081:8081\"  # Expo Dev Server\n       - \"19000:19000\"  # Expo REPL\n       - \"19001:19001\"  # Expo Web\n     environment:\n       - NODE_ENV=development\n       - EXPO_DEV=true\n       - API_URL=http://host.docker.internal:8080/api/v1\n     volumes:\n       - .:/app\n       - /app/node_modules\n     working_dir: /app\n     command: [\"npx\", \"expo\", \"start\", \"--dev-client\", \"--clear\"]\n \n   # Backend API (Cargo) - existing in TehranSaadat\n   backend:\n     image: php:8.2-apache\n     container_name: cargo-backend\n     working_dir: /var/www/html\n     volumes:\n       - ../:/var/www/html\n     environment:\n       - APACHE_DOCUMENT_ROOT=/var/www/html\n       - DB_HOST=irex-postgres\n       - DB_NAME=cargodb\n       - DB_USER=root\n       - DB_PASSWORD=root\n     expose:\n       - \"8080\"\n     networks:\n       - default\n \n networks:\n   default:\n     driver: bridge\n",
+    "additions": 1,
+    "deletions": 1,
+    "status": "modified"
+  }
+]

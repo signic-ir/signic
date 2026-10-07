@@ -1,0 +1,9 @@
+[
+  {
+    "file": "TODO.md",
+    "patch": "Index: TODO.md\n===================================================================\n--- TODO.md\t\n+++ TODO.md\t\n@@ -1,18 +1,18 @@\n # Public Rule: TODO Compliance\n # Every agent, developer, devops, llmops must respect tasks listed in @TODO.md.\n # - Move completed tasks to the \"in_progress\" section after marking them \"done\"\n # - New tasks must be added to the TODO.md file before work begins\n # - All tasks must be tracked in this file; no work outside of TODO.md is permitted\n \n every time take a todo task mve it to in_progress part after done move to done part.\n # TODO\n * every time in every mimo code I should enter manually new api key. how can I sure It's no need to enter manually with new mimo code?\n \n # IN_PROGRESS\n-* TDD Feature test for JobVision + OpenWebUI data gathering without mocks\n \n # COMPLETED\n \n+✅ TDD Feature test for JobVision + OpenWebUI data gathering without mocks\n ✅ as a senior pentest analyse and report about this project\n ✅ as a senior software engineer review\n ✅ در نسخهٔ فعلی فقط دادهٔ آگهی‌های شغلی JobVision جمع‌آوری می‌شود و دادهٔ درخواست‌ها یا رزومه‌ها در دسترس نیست. قرار بود طبق @prompt.txt تکمیل جلو بریم\n",
+    "additions": 1,
+    "deletions": 1,
+    "status": "modified"
+  }
+]

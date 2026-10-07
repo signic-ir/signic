@@ -1,0 +1,23 @@
+[
+  {
+    "file": ".dockerignore",
+    "patch": "Index: .dockerignore\n===================================================================\n--- .dockerignore\t\n+++ .dockerignore\t\n@@ -0,0 +1,9 @@\n+node_modules/\n+dist/\n+.git/\n+.dockerignore\n+Dockerfile\n+docker-compose.yml\n+.env*\n+.vite/\n+.cache/\n",
+    "additions": 9,
+    "deletions": 0,
+    "status": "added"
+  },
+  {
+    "file": "Dockerfile",
+    "patch": "Index: Dockerfile\n===================================================================\n--- Dockerfile\t\n+++ Dockerfile\t\n@@ -0,0 +1,22 @@\n+FROM node:22-alpine\n+\n+WORKDIR /app\n+\n+# Install pnpm\n+RUN npm install -g pnpm\n+\n+# Copy dependency files\n+COPY package.json pnpm-lock.yaml ./\n+\n+# Install dependencies\n+RUN pnpm install\n+\n+# Copy source\n+COPY . .\n+\n+EXPOSE 8443\n+\n+ENV PORT=8443\n+ENV HOST=0.0.0.0\n+\n+CMD [\"pnpm\", \"dev\"]\n\\ No newline at end of file\n",
+    "additions": 22,
+    "deletions": 0,
+    "status": "added"
+  },
+  {
+    "file": "docker-compose.yml",
+    "patch": "Index: docker-compose.yml\n===================================================================\n--- docker-compose.yml\t\n+++ docker-compose.yml\t\n@@ -0,0 +1,13 @@\n+services:\n+  app:\n+    build:\n+      context: .\n+      dockerfile: Dockerfile\n+    ports:\n+      - \"8443:8443\"\n+    environment:\n+      - PORT=8443\n+      - HOST=0.0.0.0\n+    volumes:\n+      - .:/app\n+      - /app/node_modules\n",
+    "additions": 13,
+    "deletions": 0,
+    "status": "added"
+  }
+]

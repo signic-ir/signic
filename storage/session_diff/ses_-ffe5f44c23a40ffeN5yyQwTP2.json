@@ -1,0 +1,9 @@
+[
+  {
+    "file": ".gitignore",
+    "patch": "Index: .gitignore\n===================================================================\n--- .gitignore\t\n+++ .gitignore\t\n@@ -1,68 +1,69 @@\n # node modules\n node_modules\n \n # expo\n .expo\n .expo-shared\n  Expo\n \n # environment variables\n .env\n .env.local\n .env.development.local\n .env.test.local\n .env.production.local\n \n # build outputs\n dist\n build\n *.tsbuildinfo\n \n # IDE\n .idea\n .vscode\n *.swp\n *.swo\n *~\n \n # OS\n .DS_Store\n Thumbs.db\n \n # logs\n logs\n *.log\n \n # cache\n .cache\n+.gradle\n temp\n tmp\n \n # test coverage\n coverage\n \n # android\n android\n !android/gradle-wrapper.jar\n \n # iOS\n ios\n *.pbxuser\n !default.pbxuser\n *.mode1v3\n !default.mode1v3\n *.mode2v3\n !default.mode2v3\n *.perspectivev3\n !default.perspectivev3\n \n # metro\n metro-config\n *.cache\n \n # assets (uncomment if you want to exclude assets)\n # assets\n \n .k*\n .mim*\n \n",
+    "additions": 1,
+    "deletions": 0,
+    "status": "modified"
+  }
+]

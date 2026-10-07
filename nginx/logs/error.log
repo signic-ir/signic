@@ -1,0 +1,7 @@
+2026/10/05 17:27:49 [error] 29#29: *1 connect() failed (111: Connection refused) while connecting to upstream, client: 172.18.0.1, server: localhost, request: "GET /favicon.ico HTTP/1.1", upstream: "http://172.18.0.6:8000/index.php", host: "localhost", referrer: "http://localhost/"
+2026/10/05 17:29:47 [error] 28#28: *1 connect() failed (111: Connection refused) while connecting to upstream, client: 172.18.0.1, server: localhost, request: "GET / HTTP/1.1", upstream: "http://172.18.0.5:8000/index.php", host: "localhost"
+2026/10/05 17:29:58 [error] 28#28: *1 connect() failed (111: Connection refused) while connecting to upstream, client: 172.18.0.1, server: localhost, request: "GET / HTTP/1.1", upstream: "http://172.18.0.5:8000/index.php", host: "localhost"
+2026/10/05 17:31:20 [error] 29#29: *1 connect() failed (111: Connection refused) while connecting to upstream, client: 172.18.0.1, server: localhost, request: "GET / HTTP/1.1", upstream: "http://172.18.0.2:8000/index.php", host: "localhost"
+2026/10/05 17:32:18 [error] 29#29: *1 directory index of "/app/" is forbidden, client: 172.18.0.1, server: localhost, request: "GET / HTTP/1.1", host: "localhost"
+2026/10/05 17:33:14 [error] 29#29: *1 directory index of "/app/public/" is forbidden, client: 172.18.0.1, server: localhost, request: "GET / HTTP/1.1", host: "localhost"
+2026/10/05 17:33:18 [error] 29#29: *1 directory index of "/app/public/" is forbidden, client: 172.18.0.1, server: localhost, request: "GET / HTTP/1.1", host: "localhost"

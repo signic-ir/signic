@@ -79,7 +79,7 @@ services:
       - signic-network
 
   minio:
-    image: quay.io/minio/minio:latest
+    image: minio/minio:latest
     ports:
       - "9000:9000"
       - "9001:9001"

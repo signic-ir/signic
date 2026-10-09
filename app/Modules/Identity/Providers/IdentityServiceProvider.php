@@ -23,17 +23,23 @@ class IdentityServiceProvider extends ServiceProvider
     public function boot(): void
     {
         // Load routes
-        $this->loadRoutesFrom(__DIR__ . '/../Routes/web.php');
+        if (file_exists(__DIR__ . '/../Routes/web.php')) {
+            $this->loadRoutesFrom(__DIR__ . '/../Routes/web.php');
+        }
         $this->loadRoutesFrom(__DIR__ . '/../Routes/api.php');
 
         // Load migrations
         $this->loadMigrationsFrom(__DIR__ . '/../Database/Migrations');
 
         // Load translations
-        $this->loadTranslationsFrom(__DIR__ . '/../Resources/Lang', 'identity');
+        if (is_dir(__DIR__ . '/../Resources/Lang')) {
+            $this->loadTranslationsFrom(__DIR__ . '/../Resources/Lang', 'identity');
+        }
 
         // Load views
-        $this->loadViewsFrom(__DIR__ . '/../Resources/Views', 'identity');
+        if (is_dir(__DIR__ . '/../Resources/Views')) {
+            $this->loadViewsFrom(__DIR__ . '/../Resources/Views', 'identity');
+        }
     }
 
     /**
@@ -41,7 +47,13 @@ class IdentityServiceProvider extends ServiceProvider
      */
     protected function registerBindings(): void
     {
-        // SMS Adapter bindings
+        // OTP Service binding
+        $this->app->bind(
+            \App\Modules\Identity\Contracts\OTPServiceInterface::class,
+            \App\Modules\Identity\Services\OTPService::class
+        );
+
+        // SMS Adapter binding
         $this->app->bind(
             \App\Modules\Identity\Contracts\SMSAdapterInterface::class,
             fn () => $this->app->make(config('identity.sms_driver', \App\Modules\Identity\Adapters\SMS\NullSMSAdapter::class))

@@ -4,87 +4,42 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
-use Illuminate\Routing\Router;
-use Illuminate\Foundation\Support\Providers\RouteServiceProvider as BaseRouteServiceProvider;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Foundation\Support\Providers\RouteServiceProvider as ServiceProvider;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\Route;
 
-class RouteServiceProvider extends BaseRouteServiceProvider
+class RouteServiceProvider extends ServiceProvider
 {
     /**
-     |---------------------------------------------------------------------------
-    | Application Route Filters
-    |---------------------------------------------------------------------------
-     |
-     | Here are the route filters that you may apply to your routes.
-     | These are in addition to any filters you may have applied
-     | in the Laravel default filter code.
-     |
+     * Define your route model bindings, pattern filters, and other route configuration.
      */
-
-    /**
-     * Define your route model bindings, pattern filters, etc.
-     */
-    protected function mapRouter(Router $router): void
+    public function boot(): void
     {
-        $router->aliasMiddleware('auth', \App\Http\Middleware\Authenticate::class);
+        $this->configureRateLimiting();
 
-        //
+        $this->routes(function () {
+            Route::middleware('api')
+                ->prefix('api')
+                ->group(base_path('routes/api.php'));
+
+            Route::middleware('web')
+                ->group(base_path('routes/web.php'));
+        });
     }
 
     /**
-     * Define the routes for the application.
+     * Configure the rate limiters for the application.
      */
-    protected function mapRoutes(): void
+    protected function configureRateLimiting(): void
     {
-        $this->mapApiRoutes();
+        RateLimiter::for('api', function (Request $request) {
+            return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
+        });
 
-        $this->mapWebRoutes();
-
-        //
-    }
-
-    /**
-     * Define the "web" routes for the application.
-     */
-    protected function mapWebRoutes(): void
-    {
-        Route::middleware('web')
-            ->namespace('App\Http\Controllers')
-            ->group(base_path('routes/web.php'));
-
-        // Map module routes
-        $this->mapModuleRoutes();
-    }
-
-    /**
-     * Define the API routes for the application.
-     */
-    protected function mapApiRoutes(): void
-    {
-        Route::prefix('api')
-            ->middleware('api')
-            ->namespace('App\Http\Controllers\Api')
-            ->group(base_path('routes/api.php'));
-    }
-
-    /**
-     * Map routes for each module
-     */
-    protected function mapModuleRoutes(): void
-    {
-        $modules = [
-            'Identity',
-            'Registration',
-            'AccessControl',
-            'Exhibition',
-            'Shared',
-        ];
-
-        foreach ($modules as $module) {
-            $moduleRoutesPath = base_path("app/Modules/{$module}/Routes/{$module}Route.php");
-
-            if (file_exists($moduleRoutesPath)) {
-                require $moduleRoutesPath;
-            }
-        }
+        RateLimiter::for('otp', function (Request $request) {
+            return Limit::perMinute(5)->by($request->ip());
+        });
     }
 }

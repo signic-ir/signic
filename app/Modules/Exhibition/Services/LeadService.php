@@ -2,18 +2,18 @@
 
 declare(strict_types=1);
 
-namespace App\Exhibition\Services;
+namespace App\Modules\Exhibition\Services;
 
-use App\Exhibition\Contracts\LeadServiceInterface;
-use App\Exhibition\DTOs\LeadCreationDTO;
-use App\Exhibition\Models\Lead;
+use App\Modules\Exhibition\Contracts\LeadServiceInterface;
+use App\Modules\Exhibition\DTOs\LeadCreationDTO;
+use App\Modules\Exhibition\Models\Lead;
 
 class LeadService implements LeadServiceInterface
 {
     public function createLead(int $exhibitorId, LeadCreationDTO $dto): Lead
     {
         // Check if attendee is currently checked in (valid scan)
-        $attendee = \App\Registration\Models\Attendee::findOrFail($dto->attendeeId);
+        $attendee = \App\Modules\Registration\Models\Attendee::findOrFail($dto->attendeeId);
 
         if (!$attendee->checkin_at) {
             throw new \Exception('Attendee has not checked in');

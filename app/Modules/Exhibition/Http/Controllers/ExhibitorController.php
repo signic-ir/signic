@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace App\Exhibition\Http\Controllers;
+namespace App\Modules\Exhibition\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
-use App\Exhibition\Models\Exhibitor;
+use App\Modules\Exhibition\Models\Exhibitor;
 use Illuminate\Database\Eloquent\Builder;
 
 class ExhibitorController extends Controller

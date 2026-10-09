@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace App\Registration\Policies;
+namespace App\Modules\Registration\Policies;
 
-use App\Registration\Models\Attendee;
+use App\Modules\Registration\Models\Attendee;
 
 class AttendeePolicy
 {

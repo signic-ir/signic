@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace App\Exhibition\Contracts;
+namespace App\Modules\Exhibition\Contracts;
 
-use App\Exhibition\DTOs\LeadCreationDTO;
-use App\Exhibition\Models\Lead;
+use App\Modules\Exhibition\DTOs\LeadCreationDTO;
+use App\Modules\Exhibition\Models\Lead;
 
 interface LeadServiceInterface
 {

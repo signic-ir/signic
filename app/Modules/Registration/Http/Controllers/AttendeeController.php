@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace App\Registration\Http\Controllers;
+namespace App\Modules\Registration\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
-use App\Registration\DTOs\AttendeeCreationDTO;
-use App\Registration\Contracts\QRServiceInterface;
-use App\Registration\Http\Middleware\CheckAttendeeDuplicate;
+use App\Modules\Registration\DTOs\AttendeeCreationDTO;
+use App\Modules\Registration\Contracts\QRServiceInterface;
+use App\Modules\Registration\Http\Middleware\CheckAttendeeDuplicate;
 
 class AttendeeController extends Controller
 {
@@ -33,7 +33,7 @@ class AttendeeController extends Controller
 
         $dto = AttendeeCreationDTO::fromRequest($validated);
 
-        $attendee = \App\Registration\Models\Attendee::create([
+        $attendee = \App\Modules\Registration\Models\Attendee::create([
             'event_id' => $validated['event_id'],
             'user_id' => $request->user()->id,
             'phone' => $dto->phone,
@@ -43,7 +43,7 @@ class AttendeeController extends Controller
             'job_title' => $dto->jobTitle,
             'ticket_type' => $dto->ticketType,
             'metadata' => $dto->metadata,
-            'status' => \App\Registration\Enums\AttendeeStatus::Registered->value,
+            'status' => \App\Modules\Registration\Enums\AttendeeStatus::Registered->value,
         ]);
 
         // Generate QR token
@@ -63,7 +63,7 @@ class AttendeeController extends Controller
 
     public function qr(int $id): JsonResponse
     {
-        $attendee = \App\Registration\Models\Attendee::where('user_id', request()->user()->id)
+        $attendee = \App\Modules\Registration\Models\Attendee::where('user_id', request()->user()->id)
             ->where('id', $id)
             ->first();
 

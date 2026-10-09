@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace App\AccessControl\Http\Controllers;
+namespace App\Modules\AccessControl\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
-use App\AccessControl\DTOs\ScanEventDTO;
-use App\AccessControl\Contracts\TurnstileServiceInterface;
-use App\AccessControl\Http\Middleware\RateLimitScan;
+use App\Modules\AccessControl\DTOs\ScanEventDTO;
+use App\Modules\AccessControl\Contracts\TurnstileServiceInterface;
+use App\Modules\AccessControl\Http\Middleware\RateLimitScan;
 
 class CheckOutController extends Controller
 {

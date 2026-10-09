@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Exhibition\DTOs;
+namespace App\Modules\Exhibition\DTOs;
 
 class LeadCreationDTO
 {

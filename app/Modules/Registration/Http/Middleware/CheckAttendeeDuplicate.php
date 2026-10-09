@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Registration\Http\Middleware;
+namespace App\Modules\Registration\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
@@ -15,7 +15,7 @@ class CheckAttendeeDuplicate
         $eventId = $request->input('event_id');
         $phone = $request->input('phone');
 
-        $exists = \App\Registration\Models\Attendee::where('user_id', $userId)
+        $exists = \App\Modules\Registration\Models\Attendee::where('user_id', $userId)
             ->where('event_id', $eventId)
             ->exists();
 
@@ -25,7 +25,7 @@ class CheckAttendeeDuplicate
             ], 409);
         }
 
-        $existsByPhone = \App\Registration\Models\Attendee::where('phone', $phone)
+        $existsByPhone = \App\Modules\Registration\Models\Attendee::where('phone', $phone)
             ->where('event_id', $eventId)
             ->exists();
 

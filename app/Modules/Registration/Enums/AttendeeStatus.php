@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App.Modules\Registration\Enums;
+namespace App\Modules\Registration\Enums;
 
 enum AttendeeStatus: string
 {

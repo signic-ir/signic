@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace App\Exhibition\Http\Controllers;
+namespace App\Modules\Exhibition\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
-use App\Exhibition\DTOs\LeadCreationDTO;
-use App\Exhibition\Contracts\LeadServiceInterface;
+use App\Modules\Exhibition\DTOs\LeadCreationDTO;
+use App\Modules\Exhibition\Contracts\LeadServiceInterface;
 
 class LeadController extends Controller
 {

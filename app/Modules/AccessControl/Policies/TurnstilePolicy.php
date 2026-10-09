@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace App\AccessControl\Policies;
+namespace App\Modules\AccessControl\Policies;
 
-use App\AccessControl\Models\Turnstile;
-use App\AccessControl\Models\ScanEvent;
-use App\Identity\Models\User;
+use App\Modules\AccessControl\Models\Turnstile;
+use App\Modules\AccessControl\Models\ScanEvent;
+use App\Modules\Identity\Models\User;
 
 class TurnstilePolicy
 {

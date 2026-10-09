@@ -21,7 +21,7 @@ return [
     | Application Debug Mode
     |--------------------------------------------------------------------------
     */
-    'debug' => (bool) ($env === 'development' || $env === 'local'),
+    'debug' => (bool) env('APP_DEBUG', false),
 
     /*
     |--------------------------------------------------------------------------
@@ -132,21 +132,21 @@ return [
     */
     'auth' => [
         'defaults' => [
-            'guard' => 'web',
+            'guard' => 'api',
             'passwords' => 'users',
         ],
 
         'guards' => [
-            'web' => [
+            'api' => [
                 'provider' => 'users',
-                'driver' => 'session',
+                'driver' => 'sanctum',
             ],
         ],
 
         'providers' => [
             'users' => [
                 'driver' => 'eloquent',
-                'model' => App\Models\User::class,
+                'model' => \App\Modules\Identity\Models\User::class,
             ],
         ],
     ],

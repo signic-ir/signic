@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Exhibition\Policies;
+namespace App\Modules\Exhibition\Policies;
 
 use App\Modules\Exhibition\Models\Exhibitor;
 use App\Modules\Exhibition\Models\Lead;

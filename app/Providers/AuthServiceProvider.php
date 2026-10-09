@@ -11,15 +11,15 @@ class AuthServiceProvider extends ServiceProvider
 {
     /**
      * The policy mappings for the application.
+     * Policies are registered per-module in their own ServiceProviders.
      */
     protected $policies = [
-        \App\Models\User::class => \App\Policies\UserPolicy::class,
-        \App\Models\Event::class => \App\Policies\EventPolicy::class,
-        \App\Models\Attendee::class => \App\Policies\AttendeePolicy::class,
-        \App\Models\Turnstile::class => \App\Policies\TurnstilePolicy::class,
-        \App\Models\ScanEvent::class => \App\Policies\ScanEventPolicy::class,
-        \App\Models\Exhibitor::class => \App\Policies\ExhibitorPolicy::class,
-        \App\Models\Lead::class => \App\Policies\LeadPolicy::class,
+        \App\Modules\Identity\Models\User::class        => \App\Modules\Identity\Policies\UserModelPolicy::class,
+        \App\Modules\AccessControl\Models\Turnstile::class => \App\Modules\AccessControl\Policies\TurnstilePolicy::class,
+        \App\Modules\AccessControl\Models\ScanEvent::class => \App\Modules\AccessControl\Policies\TurnstilePolicy::class,
+        \App\Modules\Exhibition\Models\Exhibitor::class => \App\Modules\Exhibition\Policies\ExhibitorPolicy::class,
+        \App\Modules\Exhibition\Models\Lead::class      => \App\Modules\Exhibition\Policies\LeadPolicy::class,
+        \App\Modules\Registration\Models\Attendee::class => \App\Modules\Registration\Policies\AttendeePolicy::class,
     ];
 
     /**
@@ -30,9 +30,9 @@ class AuthServiceProvider extends ServiceProvider
         $this->registerPolicies();
 
         Gate::define('super_admin', fn ($user) => $user->hasRole('super_admin'));
-        Gate::define('organizer', fn ($user) => $user->hasRole('organizer'));
-        Gate::define('operator', fn ($user) => $user->hasRole('operator'));
-        Gate::define('exhibitor', fn ($user) => $user->hasRole('exhibitor'));
-        Gate::define('visitor', fn ($user) => $user->hasRole('visitor'));
+        Gate::define('organizer',   fn ($user) => $user->hasRole('organizer'));
+        Gate::define('operator',    fn ($user) => $user->hasRole('operator'));
+        Gate::define('exhibitor',   fn ($user) => $user->hasRole('exhibitor'));
+        Gate::define('visitor',     fn ($user) => $user->hasRole('visitor'));
     }
 }

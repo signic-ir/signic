@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Identity\Policies;
+namespace App\Modules\Identity\Policies;
 
 use App\Modules\Identity\Models\User;
 

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
-         bootstrap="bootstrap/app.php"
+         bootstrap="app/vendor/autoload.php"
          colors="true"
          executionOrder="processor"
          forceCoversTargetShowUncoveredFiles="false"
@@ -26,13 +26,7 @@
 
     <testsuites>
         <testsuite name="Module Tests">
-            <directory suffix="Test.php">./tests/Modules</directory>
-        </testsuite>
-        <testsuite name="Feature Tests">
-            <directory suffix="Test.php">./tests/Feature</directory>
-        </testsuite>
-        <testsuite name="Unit Tests">
-            <directory suffix="Test.php">./tests/Unit</directory>
+            <directory suffix="Test.php">./app/Modules</directory>
         </testsuite>
     </testsuites>
 

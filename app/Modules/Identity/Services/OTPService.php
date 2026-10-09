@@ -36,7 +36,7 @@ class OTPService implements OTPServiceInterface
         return true;
     }
 
-    public function verify(string $phone, string $code): ?object
+    public function verify(string $phone, string $code): ?\Illuminate\Contracts\Auth\Authenticatable
     {
         $cacheKey = self::CACHE_PREFIX . $phone;
         $storedCode = Cache::get($cacheKey);
@@ -48,12 +48,21 @@ class OTPService implements OTPServiceInterface
         // OTP is valid, remove it from cache
         Cache::forget($cacheKey);
         
-        // Return a simple user object (will be replaced with actual User model later)
-        return (object) [
-            'id' => 1,
-            'phone' => $phone,
-            'name' => 'Test User',
-        ];
+        // Find or create user by phone number
+        $user = \App\Modules\Identity\Models\User::firstOrCreate(
+            ['phone' => $phone],
+            [
+                'name'               => null,
+                'phone_verified_at'  => now(),
+            ]
+        );
+
+        // Mark phone as verified if not already
+        if (! $user->phone_verified_at) {
+            $user->update(['phone_verified_at' => now()]);
+        }
+        
+        return $user;
     }
 
     protected function generateCode(): string

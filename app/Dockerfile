@@ -1,22 +1,22 @@
-FROM php:8.3-fpm-alpine AS php-base
+FROM php:8.3-fpm-bookworm AS php-base
 
 # Install system dependencies
-RUN apk add --no-cache \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     bash \
     git \
     curl \
-    icu \
-    icu-dev \
+    libicu-dev \
     libzip-dev \
-    libpng \
-    libjpeg-turbo \
-    freetype \
-    oniguruma \
-    libxml2 \
-    libwebp \
+    libpng-dev \
+    libjpeg-dev \
+    libfreetype6-dev \
+    libonig-dev \
+    libxml2-dev \
+    libwebp-dev \
     npm \
     yarn \
-    postgresql-dev
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
 
 # PHP extensions
 RUN docker-php-ext-install -j$(nproc) \
@@ -33,7 +33,7 @@ RUN docker-php-ext-enable opcache
 FROM php-base AS dev
 
 # Install composer dependencies
-COPY ../composer.json ./
+COPY composer.json ./
 RUN composer install --no-interaction --prefer-dist --optimize-autoloader --no-scripts && rm -rf /root/.composer
 
 FROM php-base AS prod

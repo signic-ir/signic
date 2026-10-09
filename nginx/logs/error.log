@@ -5,3 +5,4 @@
 2026/10/05 17:32:18 [error] 29#29: *1 directory index of "/app/" is forbidden, client: 172.18.0.1, server: localhost, request: "GET / HTTP/1.1", host: "localhost"
 2026/10/05 17:33:14 [error] 29#29: *1 directory index of "/app/public/" is forbidden, client: 172.18.0.1, server: localhost, request: "GET / HTTP/1.1", host: "localhost"
 2026/10/05 17:33:18 [error] 29#29: *1 directory index of "/app/public/" is forbidden, client: 172.18.0.1, server: localhost, request: "GET / HTTP/1.1", host: "localhost"
+2026/10/07 13:07:34 [error] 29#29: *3 upstream sent unsupported FastCGI protocol version: 72 while reading response header from upstream, client: 172.18.0.1, server: localhost, request: "GET / HTTP/1.1", upstream: "fastcgi://172.18.0.2:9000", host: "localhost"

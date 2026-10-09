@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\AccessControl\DTOs;
+namespace App\Modules\AccessControl\DTOs;
 
 class ScanEventDTO
 {

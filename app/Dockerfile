@@ -34,6 +34,8 @@ FROM php-base AS dev
 
 # Install composer dependencies
 COPY composer.json ./
+COPY composer.lock ./
+COPY app/ ./app/
 RUN composer install --no-interaction --prefer-dist --optimize-autoloader --no-scripts && rm -rf /root/.composer
 
 FROM php-base AS prod

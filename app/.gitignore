@@ -21,6 +21,9 @@ storage/framework/cache/
 storage/framework/views/
 storage/framework/sessions/
 
+# Runtime-generated files on the public disk (e.g. rendered QR codes)
+storage/app/
+
 # PHPUnit
 .phpunit.result.cache
 phpunit.xml

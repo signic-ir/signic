@@ -15,8 +15,8 @@ return new class extends Migration
             $table->foreignId('attendee_id')->constrained('attendees')->onDelete('cascade');
             $table->foreignId('turnstile_id')->constrained('turnstiles')->onDelete('cascade');
             $table->string('token_hash');
-            $table->enum('event_type', ['checkin', 'checkout', 'force_checkin', 'force_checkout']);
-            $table->enum('result', ['success', 'duplicate', 'not_found', 'expired', 'invalid']);
+            $table->enum('event_type', ['CHECK_IN', 'CHECK_OUT', 'FORCE_CHECK_IN', 'FORCE_CHECK_OUT']);
+            $table->enum('result', ['SUCCESS', 'DUPLICATE', 'NOT_FOUND', 'EXPIRED', 'INVALID']);
             $table->string('ip_address')->nullable();
             $table->json('metadata')->nullable();
             $table->timestamp('scanned_at');

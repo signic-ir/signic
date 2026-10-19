@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\Modules\Exhibition\Events;
 
-use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
-use Illuminate\Contracts\SerializesModels;
+use Illuminate\Queue\SerializesModels;
+use Illuminate\Foundation\Events\Dispatchable;
 
-class LeadCreated extends Event implements ShouldBroadcast
+class LeadCreated implements ShouldBroadcast
 {
     use Dispatchable, SerializesModels;
 
@@ -26,7 +26,7 @@ class LeadCreated extends Event implements ShouldBroadcast
     }
 
     /**
-     * Get the channels the event should broadcast on.
+     * Get the channels the event should be broadcast on.
      */
     public function broadcastOn(): array
     {

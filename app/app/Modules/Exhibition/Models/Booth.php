@@ -7,6 +7,7 @@ namespace App\Modules\Exhibition\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Modules\Registration\Models\Event;
 
 class Booth extends Model
 {
@@ -19,6 +20,7 @@ class Booth extends Model
         'exhibitor_id',
         'event_id',
         'number',
+        'name',
         'section',
         'location',
         'layout_config',

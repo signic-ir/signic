@@ -6,9 +6,9 @@ namespace App\Modules\Registration\Enums;
 
 enum EventStatus: string
 {
-    case Draft = 'draft';
-    case Active = 'active';
-    case Paused = 'paused';
-    case Completed = 'completed';
-    case Cancelled = 'cancelled';
+    case Draft = 'DRAFT';
+    case Active = 'ACTIVE';
+    case Paused = 'PAUSED';
+    case Completed = 'COMPLETED';
+    case Cancelled = 'CANCELLED';
 }

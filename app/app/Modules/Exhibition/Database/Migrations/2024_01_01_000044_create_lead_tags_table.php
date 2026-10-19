@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('tag_name');
             $table->string('color')->default('#6B7280');
             $table->text('note')->nullable();
-            $table->foreignId('created_by_user_id')->constrained('users')->onDelete('cascade');
+            $table->foreignId('created_by_user_id')->nullable()->constrained('users')->onDelete('set null');
             $table->timestamps();
 
             $table->index(['lead_id']);

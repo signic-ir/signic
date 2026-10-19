@@ -5,164 +5,347 @@ declare(strict_types=1);
 namespace App\Modules\AccessControl\Services;
 
 use App\Modules\AccessControl\Contracts\TurnstileServiceInterface;
+use App\Modules\AccessControl\Enums\ScanEventType;
+use App\Modules\AccessControl\Enums\ScanResult;
+use App\Modules\AccessControl\Events\CheckInEvent;
+use App\Modules\AccessControl\Events\CheckOutEvent;
+use App\Modules\AccessControl\Models\ScanEvent;
+use App\Modules\AccessControl\Models\Turnstile;
 use App\Modules\Registration\Contracts\QRServiceInterface;
+use App\Modules\Registration\Enums\AttendeeStatus;
 use App\Modules\Registration\Models\Attendee;
+use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Redis;
-use Illuminate\Support\Facades\Log;
 
 class TurnstileService implements TurnstileServiceInterface
 {
-    const LOCK_PREFIX = 'signic_lock_turnstile_';
-    const CHECKIN_PREFIX = 'signic_checkin_';
-    const CHECKOUT_PREFIX = 'signic_checkout_';
+    /**
+     * Lock prefix for a single attendee. Serialises every scan of the same
+     * attendee, no matter which turnstile it happens at.
+     */
+    public const ATTENDEE_LOCK_PREFIX = 'signic_lock_attendee_';
 
-    protected int $lockTimeout;
+    /**
+     * Lock prefix for a single turnstile.
+     */
+    public const TURNSTILE_LOCK_PREFIX = 'signic_lock_turnstile_';
+
+    /**
+     * How long a lock is held before Redis expires it (seconds).
+     */
+    protected int $lockTimeout = 10;
+
+    /**
+     * How long a competing scan waits for the attendee lock (seconds).
+     */
+    protected int $lockWaitSeconds = 5;
 
     public function __construct()
     {
-        $this->lockTimeout = 30; // 30 seconds lock
+        $this->lockTimeout = 10;
+        $this->lockWaitSeconds = 5;
     }
 
-    public function checkIn(string $qrToken, string $turnstileId, array $metadata = []): object
-    {
-        // Validate QR token first
-        $attendeeId = app(QRServiceInterface::class)->validate($qrToken);
+    /**
+     * Process a check-in scan.
+     *
+     * The database is the source of truth: an attendee is checked in when
+     * `checkin_at` is set. The check and the write happen under a per attendee
+     * lock, so two concurrent scans of the same badge cannot both succeed.
+     */
+    public function checkIn(
+        string $qrToken,
+        int|string $turnstileId,
+        array $metadata = [],
+        ?string $ipAddress = null,
+        string $eventType = ScanEventType::Checkin->value
+    ): object {
+        $qrService = app(QRServiceInterface::class);
+        $attendeeId = $qrService->validate($qrToken);
 
         if (! $attendeeId) {
-            return (object) [
-                'success' => false,
-                'message' => 'Invalid or expired QR token',
-                'result' => 'invalid',
-            ];
+            return $this->failure('Invalid QR token', ScanResult::Invalid, 422);
         }
 
-        $lockKey = self::LOCK_PREFIX . $turnstileId;
+        $turnstile = $this->resolveTurnstile($turnstileId);
 
-        // Use Redis atomic lock to prevent race conditions
-        $lock = Redis::lock($lockKey, 10);
+        if (! $turnstile) {
+            return $this->failure('Turnstile not found', ScanResult::NotFound, 404);
+        }
+
+        $forced = $this->isForced($eventType);
+        $lock = Cache::lock(self::ATTENDEE_LOCK_PREFIX . $attendeeId, $this->lockTimeout);
 
         try {
-            if (! $lock->get()) {
-                return (object) [
-                    'success' => false,
-                    'message' => 'Turnstile is busy. Please try again.',
-                    'result' => 'busy',
-                ];
+            $lock->block($this->lockWaitSeconds);
+        } catch (LockTimeoutException) {
+            return $this->failure('Turnstile is busy. Please try again.', ScanResult::Duplicate, 409);
+        }
+
+        try {
+            // Re-read the attendee inside the lock: this is the check-then-act
+            // that makes concurrent scans safe.
+            $attendee = Attendee::find($attendeeId);
+
+            if (! $attendee) {
+                return $this->failure('Attendee not found', ScanResult::NotFound, 404);
             }
 
-            // Check if already checked in (idempotency)
-            $checkinKey = self::CHECKIN_PREFIX . $qrToken;
-            $existing = Cache::get($checkinKey);
-
-            if ($existing) {
-                return (object) [
-                    'success' => true,
-                    'message' => 'Already checked in',
-                    'result' => 'duplicate',
-                    'checked_in_at' => $existing,
-                ];
+            if ($attendee->checkin_at !== null && ! $forced) {
+                return $this->failure('Attendee is already being checked-in', ScanResult::Duplicate, 409, [
+                    'attendee_id' => $attendee->id,
+                    'attendee_name' => $attendee->name,
+                    'event_type' => $eventType,
+                    'checked_in_at' => $attendee->checkin_at?->toISOString(),
+                    'turnstile_id' => $turnstile->id,
+                ]);
             }
 
-            // Perform check-in
-            $checkinData = [
-                'qr_token' => $qrToken,
-                'turnstile_id' => $turnstileId,
-                'checked_in_at' => now()->toISOString(),
+            $scannedAt = now();
+
+            $attendee->forceFill([
+                'checkin_at' => $scannedAt,
+                'status' => AttendeeStatus::CheckedIn->value,
+            ])->save();
+
+            $scanEvent = $this->recordScanEvent(
+                $attendee->id,
+                $turnstile->id,
+                $qrToken,
+                $eventType,
+                $ipAddress,
+                $metadata,
+                $scannedAt
+            );
+
+            event(new CheckInEvent([
+                'attendee_id' => $attendee->id,
+                'attendee_name' => $attendee->name,
+                'turnstile_id' => $turnstile->id,
+                'event_type' => $eventType,
+                'checked_in_at' => $scannedAt->toISOString(),
                 'metadata' => $metadata,
-            ];
-
-            Cache::put($checkinKey, $checkinData['checked_in_at'], now()->addDays(30));
-
-            // Update attendee check-in timestamp
-            Attendee::where('id', $attendeeId)->update(['checkin_at' => now()]);
-
-            // Emit domain event for check-in (for module communication)
-            event(new \App\Modules\AccessControl\Events\CheckInEvent($checkinData));
+            ]));
 
             return (object) [
                 'success' => true,
                 'message' => 'Check-in successful',
-                'result' => 'success',
-                'checked_in_at' => $checkinData['checked_in_at'],
+                'result' => ScanResult::Success->value,
+                'attendee_id' => $attendee->id,
+                'attendee_name' => $attendee->name,
+                'event_type' => $eventType,
+                'checked_in_at' => $scannedAt->toISOString(),
+                'turnstile_id' => $turnstile->id,
+                'scan_event_id' => $scanEvent->id,
+                'http_status' => 200,
             ];
-
         } finally {
-            optional($lock)->release();
+            $lock->release();
         }
     }
 
-    public function checkOut(string $qrToken, string $turnstileId, array $metadata = []): object
-    {
-        // Validate QR token first
-        $attendeeId = app(QRServiceInterface::class)->validate($qrToken);
+    /**
+     * Process a check-out scan.
+     *
+     * A check-out is only valid for an attendee that is currently checked in.
+     */
+    public function checkOut(
+        string $qrToken,
+        int|string $turnstileId,
+        array $metadata = [],
+        ?string $ipAddress = null,
+        string $eventType = ScanEventType::Checkout->value
+    ): object {
+        $qrService = app(QRServiceInterface::class);
+        $attendeeId = $qrService->validate($qrToken);
 
         if (! $attendeeId) {
-            return (object) [
-                'success' => false,
-                'message' => 'Invalid or expired QR token',
-                'result' => 'invalid',
-            ];
+            return $this->failure('Invalid QR token', ScanResult::Invalid, 422);
         }
 
-        $lockKey = self::LOCK_PREFIX . $turnstileId;
+        $turnstile = $this->resolveTurnstile($turnstileId);
 
-        $lock = Redis::lock($lockKey, 10);
+        if (! $turnstile) {
+            return $this->failure('Turnstile not found', ScanResult::NotFound, 404);
+        }
+
+        $forced = $this->isForced($eventType);
+        $lock = Cache::lock(self::ATTENDEE_LOCK_PREFIX . $attendeeId, $this->lockTimeout);
 
         try {
-            if (! $lock->get()) {
-                return (object) [
-                    'success' => false,
-                    'message' => 'Turnstile is busy. Please try again.',
-                    'result' => 'busy',
-                ];
+            $lock->block($this->lockWaitSeconds);
+        } catch (LockTimeoutException) {
+            return $this->failure('Turnstile is busy. Please try again.', ScanResult::Duplicate, 409);
+        }
+
+        try {
+            $attendee = Attendee::find($attendeeId);
+
+            if (! $attendee) {
+                return $this->failure('Attendee not found', ScanResult::NotFound, 404);
             }
 
-            $checkoutKey = self::CHECKOUT_PREFIX . $qrToken;
-            $existing = Cache::get($checkoutKey);
-
-            if ($existing) {
-                return (object) [
-                    'success' => true,
-                    'message' => 'Already checked out',
-                    'result' => 'duplicate',
-                    'checked_out_at' => $existing,
-                ];
+            if ($attendee->checkout_at !== null && ! $forced) {
+                return $this->failure('Attendee is already being checked-out', ScanResult::Duplicate, 409, [
+                    'attendee_id' => $attendee->id,
+                    'attendee_name' => $attendee->name,
+                    'event_type' => $eventType,
+                    'checked_out_at' => $attendee->checkout_at?->toISOString(),
+                    'turnstile_id' => $turnstile->id,
+                ]);
             }
 
-            $checkoutData = [
-                'qr_token' => $qrToken,
-                'turnstile_id' => $turnstileId,
-                'checked_out_at' => now()->toISOString(),
+            if ($attendee->checkin_at === null && ! $forced) {
+                return $this->failure(
+                    'Invalid check-out attempt: attendee has not been checked in',
+                    ScanResult::Invalid,
+                    409,
+                    [
+                        'attendee_id' => $attendee->id,
+                        'attendee_name' => $attendee->name,
+                        'event_type' => $eventType,
+                        'turnstile_id' => $turnstile->id,
+                    ]
+                );
+            }
+
+            $scannedAt = now();
+
+            $attendee->forceFill([
+                'checkout_at' => $scannedAt,
+                'status' => AttendeeStatus::CheckedOut->value,
+            ])->save();
+
+            $scanEvent = $this->recordScanEvent(
+                $attendee->id,
+                $turnstile->id,
+                $qrToken,
+                $eventType,
+                $ipAddress,
+                $metadata,
+                $scannedAt
+            );
+
+            event(new CheckOutEvent([
+                'attendee_id' => $attendee->id,
+                'attendee_name' => $attendee->name,
+                'turnstile_id' => $turnstile->id,
+                'event_type' => $eventType,
+                'checked_out_at' => $scannedAt->toISOString(),
                 'metadata' => $metadata,
-            ];
-
-            Cache::put($checkoutKey, $checkoutData['checked_out_at'], now()->addDays(30));
-
-            // Update attendee check-out timestamp
-            Attendee::where('id', $attendeeId)->update(['checkout_at' => now()]);
-
-            event(new \App\Modules\AccessControl\Events\CheckOutEvent($checkoutData));
+            ]));
 
             return (object) [
                 'success' => true,
                 'message' => 'Check-out successful',
-                'result' => 'success',
-                'checked_out_at' => $checkoutData['checked_out_at'],
+                'result' => ScanResult::Success->value,
+                'attendee_id' => $attendee->id,
+                'attendee_name' => $attendee->name,
+                'event_type' => $eventType,
+                'checked_in_at' => $attendee->checkin_at?->toISOString(),
+                'checked_out_at' => $scannedAt->toISOString(),
+                'turnstile_id' => $turnstile->id,
+                'scan_event_id' => $scanEvent->id,
+                'http_status' => 200,
             ];
-
         } finally {
-            optional($lock)->release();
+            $lock->release();
         }
     }
 
+    /**
+     * Current attendance status of an attendee, read from the database.
+     */
     public function getStatus(int $attendeeId): object
     {
-        // Return attendance status
+        $attendee = Attendee::find($attendeeId);
+
+        if (! $attendee) {
+            return (object) [
+                'attendee_id' => $attendeeId,
+                'found' => false,
+                'status' => null,
+                'checkin_at' => null,
+                'checkout_at' => null,
+                'checked_in' => false,
+                'checked_out' => false,
+            ];
+        }
+
         return (object) [
-            'attendee_id' => $attendeeId,
-            'checkedIn' => Cache::has(self::CHECKIN_PREFIX . $attendeeId),
-            'checkedOut' => Cache::has(self::CHECKOUT_PREFIX . $attendeeId),
+            'attendee_id' => $attendee->id,
+            'found' => true,
+            'attendee_name' => $attendee->name,
+            'status' => $attendee->status,
+            'checkin_at' => $attendee->checkin_at?->toISOString(),
+            'checkout_at' => $attendee->checkout_at?->toISOString(),
+            'checked_in' => $attendee->checkin_at !== null,
+            'checked_out' => $attendee->checkout_at !== null,
         ];
+    }
+
+    /**
+     * Resolve a turnstile from an id or from its name.
+     */
+    public function resolveTurnstile(int|string $turnstile): ?Turnstile
+    {
+        $value = trim((string) $turnstile);
+
+        if ($value === '') {
+            return null;
+        }
+
+        if (ctype_digit($value)) {
+            return Turnstile::find((int) $value);
+        }
+
+        return Turnstile::where('name', $value)->where('is_active', true)->first()
+            ?? Turnstile::where('name', $value)->first();
+    }
+
+    /**
+     * Write the scan event that proves the scan happened.
+     */
+    protected function recordScanEvent(
+        int $attendeeId,
+        int $turnstileId,
+        string $qrToken,
+        string $eventType,
+        ?string $ipAddress,
+        array $metadata,
+        \DateTimeInterface $scannedAt
+    ): ScanEvent {
+        return ScanEvent::create([
+            'attendee_id' => $attendeeId,
+            'turnstile_id' => $turnstileId,
+            'token_hash' => hash('sha256', $qrToken),
+            'event_type' => $eventType,
+            'result' => ScanResult::Success->value,
+            'ip_address' => $ipAddress,
+            'metadata' => $metadata ?: null,
+            'scanned_at' => $scannedAt,
+        ]);
+    }
+
+    protected function isForced(string $eventType): bool
+    {
+        return in_array(
+            $eventType,
+            [ScanEventType::ForceCheckin->value, ScanEventType::ForceCheckout->value],
+            true
+        );
+    }
+
+    /**
+     * @param  array<string, mixed>  $extra
+     */
+    protected function failure(string $message, ScanResult $result, int $status, array $extra = []): object
+    {
+        return (object) array_merge([
+            'success' => false,
+            'message' => $message,
+            'result' => $result->value,
+            'http_status' => $status,
+        ], $extra);
     }
 }

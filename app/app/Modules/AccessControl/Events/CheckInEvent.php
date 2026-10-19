@@ -4,12 +4,11 @@ declare(strict_types=1);
 
 namespace App\Modules\AccessControl\Events;
 
-use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
-use Illuminate\Auth\Access\AuthorizationException;
-use Illuminate\Contracts\SerializesModels;
+use Illuminate\Queue\SerializesModels;
+use Illuminate\Foundation\Events\Dispatchable;
 
-class CheckInEvent extends Event implements ShouldBroadcast
+class CheckInEvent implements ShouldBroadcast
 {
     use Dispatchable, SerializesModels;
 
@@ -18,7 +17,7 @@ class CheckInEvent extends Event implements ShouldBroadcast
      *
      * @var array
      */
-    public $checkInData;
+    public array $checkInData;
 
     /**
      * Create a new event instance.

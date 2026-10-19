@@ -6,8 +6,8 @@ namespace App\Modules\AccessControl\Enums;
 
 enum ScanEventType: string
 {
-    case Checkin = 'checkin';
-    case Checkout = 'checkout';
-    case ForceCheckin = 'force_checkin';
-    case ForceCheckout = 'force_checkout';
+    case Checkin = 'CHECK_IN';
+    case Checkout = 'CHECK_OUT';
+    case ForceCheckin = 'FORCE_CHECK_IN';
+    case ForceCheckout = 'FORCE_CHECK_OUT';
 }

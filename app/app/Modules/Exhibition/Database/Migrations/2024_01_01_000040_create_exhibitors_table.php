@@ -20,9 +20,10 @@ return new class extends Migration
             $table->string('contact_phone')->nullable();
             $table->text('booth_description')->nullable();
             $table->json('booth_specs')->nullable();
-            $table->enum('status', ['pending', 'confirmed', 'cancelled', 'inactive'])->default('pending');
+            $table->enum('status', ['PENDING', 'CONFIRMED', 'CANCELLED', 'INACTIVE'])->default('PENDING');
             $table->json('contact_person')->nullable();
             $table->timestamps();
+            $table->softDeletes();
 
             $table->index(['event_id']);
             $table->index(['status']);

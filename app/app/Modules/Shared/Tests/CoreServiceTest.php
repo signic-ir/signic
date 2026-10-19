@@ -4,60 +4,109 @@ declare(strict_types=1);
 
 namespace App\Modules\Shared\Tests;
 
-use App\Modules\Shared\Services\CoreService;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Testing\Faker\FakerGenerator;
-use Mockery;
-use PHPUnit\Framework\Attributes\Test;
+use App\Modules\Identity\Models\User;
+use App\Modules\Shared\Models\Permission;
+use App\Modules\Shared\Models\Role;
+use App\Modules\Shared\Services\RoleService;
+use Illuminate\Contracts\Console\Kernel;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
+use Illuminate\Support\Facades\Artisan;
 
-class CoreServiceTest
+class CoreServiceTest extends BaseTestCase
 {
-    private CoreService $service;
-    private FakerGenerator $faker;
+    use DatabaseTransactions;
 
-    public function setUp(): void
+    /**
+     * Boot the application for the test.
+     *
+     * The tests run against an isolated in-memory database so that they
+     * never touch the database of the platform.
+     */
+    public function createApplication()
     {
-        $this->service = new CoreService();
-        $this->faker = app(FakerGenerator::class);
-        Cache::flush();
+        $app = require __DIR__ . '/../../../../bootstrap/app.php';
+
+        $app->make(Kernel::class)->bootstrap();
+
+        $app['config']->set('database.default', 'sqlite');
+        $app['config']->set('database.connections.sqlite.database', ':memory:');
+
+        return $app;
     }
 
-    public function tearDown(): void
+    protected function setUp(): void
     {
-        Mockery::close();
-        Cache::flush();
+        parent::setUp();
+
+        // The schema of the testing database is built once per run. Only the
+        // migrations of the Identity and of the Shared module are applied.
+        Artisan::call('migrate', [
+            '--force' => true,
+            '--path' => [
+                'app/Modules/Identity/Database/Migrations',
+                'app/Modules/Shared/Database/Migrations',
+            ],
+        ]);
     }
 
-    #[Test]
-    public function it_generates_and_verifies_jwt_token(): void
+    public function test_a_role_holds_the_permissions_granted_to_it(): void
     {
-        $userId = 123;
-        $token = $this->service->generateToken($userId);
+        $role = Role::create(['name' => 'event_organizer', 'guard_name' => 'web']);
+        $permission = Permission::create(['name' => 'attendee.create', 'guard_name' => 'web']);
 
-        $this->assertStringNotEmpty($token);
-        $this->assertStringContainsString('.', $token);
+        $role->permissions()->syncWithoutDetaching([$permission->id]);
+
+        $this->assertTrue($role->fresh()->permissions->contains('id', $permission->id));
     }
 
-    #[Test]
-    public function it_validates_permission_for_user(): void
+    public function test_a_user_inherits_the_permissions_of_their_role(): void
     {
-        $userId = 123;
-        $permission = 'view_attendees';
+        $user = $this->user('+989120000000');
 
-        $hasPermission = $this->service->checkPermission($userId, $permission);
+        $user->assignRole('event_organizer');
 
-        $this->assertIsBool($hasPermission);
+        $permission = Permission::firstOrCreate(
+            ['name' => 'attendee.create'],
+            ['guard_name' => 'web']
+        );
+
+        app(RoleService::class)->assignPermission(
+            Role::where('name', 'event_organizer')->firstOrFail(),
+            $permission
+        );
+
+        $this->assertTrue($user->fresh()->hasPermissionTo('attendee.create'));
     }
 
-    #[Test]
-    public function it_routes_notification_by_channel(): void
+    public function test_a_super_admin_holds_every_permission_of_the_system(): void
     {
-        $recipient = '+1234567890';
-        $message = 'Test message';
-        $channel = 'sms';
+        $user = $this->user('+989120000001');
 
-        $result = $this->service->sendNotification($recipient, $message, $channel);
+        $user->assignRole('super_admin');
 
-        $this->assertIsBool($result);
+        Permission::create(['name' => 'exhibitor.lead.create', 'guard_name' => 'web']);
+
+        $this->assertTrue($user->fresh()->hasPermissionTo('exhibitor.lead.create'));
+    }
+
+    public function test_a_user_is_denied_a_permission_their_role_does_not_hold(): void
+    {
+        $user = $this->user('+989120000002');
+
+        $user->assignRole('staff');
+
+        Permission::create(['name' => 'exhibitor.lead.create', 'guard_name' => 'web']);
+
+        $this->assertFalse($user->fresh()->hasPermissionTo('exhibitor.lead.create'));
+    }
+
+    protected function user(string $phone): User
+    {
+        return User::create([
+            'phone' => $phone,
+            'name' => 'Test User',
+            'status' => 'active',
+        ]);
     }
 }

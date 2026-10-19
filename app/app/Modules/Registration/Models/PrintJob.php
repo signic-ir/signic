@@ -17,7 +17,9 @@ class PrintJob extends Model
      */
     protected $fillable = [
         'attendee_id',
+        'printed_by_user_id',
         'status',
+        'qr_code',
         'badge_data',
         'print_settings',
         'printed_at',

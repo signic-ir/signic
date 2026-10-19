@@ -21,12 +21,18 @@ class RegistrationServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        $this->mergeConfigFrom(__DIR__ . '/../Config/registration.php', 'registration');
+
         if (file_exists(__DIR__ . '/../Routes/web.php')) {
             $this->loadRoutesFrom(__DIR__ . '/../Routes/web.php');
         }
         $this->loadRoutesFrom(__DIR__ . '/../Routes/api.php');
 
         $this->loadMigrationsFrom(__DIR__ . '/../Database/Migrations');
+
+        $this->commands([
+            \App\Modules\Registration\Console\CleanupExpiredEvents::class,
+        ]);
     }
 
     protected function registerBindings(): void

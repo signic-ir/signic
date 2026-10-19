@@ -4,21 +4,25 @@ declare(strict_types=1);
 
 namespace App\Modules\Registration\Console;
 
+use App\Modules\Registration\Services\EventCleanupService;
 use Illuminate\Console\Command;
-use App\Modules\Registration\Models\Event;
 
 class CleanupExpiredEvents extends Command
 {
     protected $signature = 'signic:cleanup-events';
-    protected $description = 'Mark expired events as completed';
 
-    public function handle(): int
+    protected $description = 'Archive expired events and invalidate expired QR tokens';
+
+    public function handle(EventCleanupService $cleanupService): int
     {
-        Event::where('status', 'active')
-            ->where('ends_at', '<', now())
-            ->update(['status' => 'completed']);
+        $summary = $cleanupService->run();
 
-        $this->info('Expired events marked as completed.');
+        $this->info(sprintf(
+            'Archived %d event(s), invalidated %d QR token(s), cleaned %d temporary record(s).',
+            $summary['archived_events'],
+            $summary['invalidated_qr_tokens'],
+            $summary['cleaned_temporary_data']
+        ));
 
         return self::SUCCESS;
     }

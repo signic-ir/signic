@@ -4,82 +4,68 @@ declare(strict_types=1);
 
 namespace App\Modules\AccessControl\Tests;
 
+use App\Modules\AccessControl\Contracts\TurnstileServiceInterface;
+use App\Modules\AccessControl\DTOs\ScanEventDTO;
 use App\Modules\AccessControl\Services\TurnstileService;
-use App\Modules\AccessControl\Models\Turnstile;
-use App\Modules\Registration\Models\Attendee;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Redis;
-use Illuminate\Testing\Faker\FakerGenerator;
+use App\Modules\Registration\Contracts\QRServiceInterface;
 use Mockery;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\TestCase;
 
-class TurnstileServiceTest
+class TurnstileServiceTest extends TestCase
 {
-    private TurnstileService $service;
-    private FakerGenerator $faker;
-
-    public function setUp(): void
-    {
-        $this->service = new TurnstileService();
-        $this->faker = app(FakerGenerator::class);
-        Cache::flush();
-        Redis::flushAll();
-    }
-
-    public function tearDown(): void
+    protected function tearDown(): void
     {
         Mockery::close();
-        Cache::flush();
-        Redis::flushAll();
+
+        parent::tearDown();
     }
 
     #[Test]
-    public function it_checks_in_attendee_with_valid_qr(): void
+    public function it_rejects_an_invalid_qr_token(): void
     {
-        $attendee = Attendee::factory()->make(['id' => 1]);
-        $turnstile = Turnstile::factory()->make(['id' => 1]);
-        $qrService = Mockery::mock('App\Modules\Registration\Services\QRService');
-        $qrService->shouldReceive('validateToken')
-            ->with(Mockery::any())
-            ->andReturn(['attendee_id' => $attendee->id]);
+        $qrService = Mockery::mock(QRServiceInterface::class);
+        $qrService->shouldReceive('validate')->andReturnNull();
+        $this->app->instance(QRServiceInterface::class, $qrService);
 
-        $service = new TurnstileService($qrService);
-        $result = $service->checkIn('valid_qr_token', $attendee, $turnstile);
+        /** @var TurnstileService $service */
+        $service = $this->app->make(TurnstileServiceInterface::class);
 
-        $this->assertEquals('success', $result['result']);
-        $this->assertEquals($attendee->id, $result['attendee_id']);
-        $this->assertEquals($turnstile->id, $result['turnstile_id']);
+        $result = $service->checkIn('not-a-valid-token', 1);
+
+        $this->assertFalse($result->success);
+        $this->assertSame('Invalid QR token', $result->message);
+        $this->assertSame('INVALID', $result->result);
+        $this->assertSame(422, $result->http_status);
     }
 
     #[Test]
-    public function it_rejects_invalid_qr_token(): void
+    public function the_scan_dto_reads_the_token_and_defaults_the_event_type(): void
     {
-        $attendee = Attendee::factory()->make();
-        $turnstile = Turnstile::factory()->make();
-        $qrService = Mockery::mock('App\Modules\Registration\Services\QRService');
-        $qrService->shouldReceive('validateToken')
-            ->with('invalid_token')
-            ->andReturn(null);
+        $dto = ScanEventDTO::fromRequest([
+            'qr_token' => '12|abc|signature',
+            'turnstile_id' => 7,
+        ], '127.0.0.1');
 
-        $service = new TurnstileService($qrService);
-        $result = $service->checkIn('invalid_token', $attendee, $turnstile);
-
-        $this->assertEquals('invalid', $result['result']);
+        $this->assertSame('12|abc|signature', $dto->qrToken);
+        $this->assertSame(7, $dto->turnstileId);
+        $this->assertSame('CHECK_IN', $dto->eventType);
+        $this->assertSame('127.0.0.1', $dto->ip);
+        $this->assertSame([], $dto->metadata);
+        $this->assertSame(hash('sha256', '12|abc|signature'), $dto->tokenHash());
     }
 
     #[Test]
-    public function it_checks_out_attendee(): void
+    public function the_scan_dto_accepts_the_token_hash_alias_and_a_turnstile_name(): void
     {
-        $attendee = Attendee::factory()->make(['id' => 1]);
-        $turnstile = Turnstile::factory()->make(['id' => 1]);
-        $qrService = Mockery::mock('App\Modules\Registration\Services\QRService');
-        $qrService->shouldReceive('validateToken')
-            ->with(Mockery::any())
-            ->andReturn(['attendee_id' => $attendee->id]);
+        $dto = ScanEventDTO::fromRequest([
+            'token_hash' => '12|abc|signature',
+            'turnstile' => 'Main Gate',
+            'event_type' => 'CHECK_OUT',
+        ], '10.0.0.1');
 
-        $service = new TurnstileService($qrService);
-        $result = $service->checkOut('valid_qr_token', $attendee, $turnstile);
-
-        $this->assertEquals('success', $result['result']);
+        $this->assertSame('12|abc|signature', $dto->qrToken);
+        $this->assertSame('Main Gate', $dto->turnstileId);
+        $this->assertSame('CHECK_OUT', $dto->eventType);
     }
 }

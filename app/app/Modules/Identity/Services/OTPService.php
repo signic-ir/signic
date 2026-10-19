@@ -68,6 +68,6 @@ class OTPService implements OTPServiceInterface
     protected function generateCode(): string
     {
         // Generate a random numeric code
-        return str_pad(random_int(0, pow(10, self::OTP_LENGTH) - 1), self::OTP_LENGTH, '0', STR_PAD_LEFT);
+        return str_pad((string) random_int(0, (int) pow(10, self::OTP_LENGTH) - 1), self::OTP_LENGTH, '0', STR_PAD_LEFT);
     }
 }

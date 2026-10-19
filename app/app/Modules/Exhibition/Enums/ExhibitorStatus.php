@@ -6,8 +6,16 @@ namespace App\Modules\Exhibition\Enums;
 
 enum ExhibitorStatus: string
 {
-    case Pending = 'pending';
-    case Confirmed = 'confirmed';
-    case Cancelled = 'cancelled';
-    case Inactive = 'inactive';
+    case Pending = 'PENDING';
+    case Confirmed = 'CONFIRMED';
+    case Cancelled = 'CANCELLED';
+    case Inactive = 'INACTIVE';
+
+    /**
+     * @return array<int, string>
+     */
+    public static function values(): array
+    {
+        return array_map(fn (self $case) => $case->value, self::cases());
+    }
 }

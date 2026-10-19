@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace App\Modules\AccessControl\Events;
 
-use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
+use Illuminate\Queue\SerializesModels;
+use Illuminate\Foundation\Events\Dispatchable;
 
-class CheckOutEvent extends Event implements ShouldBroadcast
+class CheckOutEvent implements ShouldBroadcast
 {
     use Dispatchable, SerializesModels;
 
@@ -25,7 +26,7 @@ class CheckOutEvent extends Event implements ShouldBroadcast
     }
 
     /**
-     * Get the channels the event should broadcast on.
+     * Get the channels the event should be broadcast on.
      */
     public function broadcastOn(): array
     {

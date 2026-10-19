@@ -19,6 +19,8 @@ class QRBadge extends Model
         'token_hash',
         'design_version',
         'is_active',
+        'validation_count',
+        'last_validated_at',
         'generated_at',
         'expires_at',
         'design_config_json',
@@ -29,6 +31,8 @@ class QRBadge extends Model
      */
     protected $casts = [
         'is_active' => 'boolean',
+        'validation_count' => 'integer',
+        'last_validated_at' => 'datetime',
         'generated_at' => 'datetime',
         'expires_at' => 'datetime',
     ];

@@ -6,6 +6,7 @@ namespace App\Modules\Registration\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Modules\Identity\Models\User;
 use App\Modules\Registration\Models\QRBadge;
@@ -22,8 +23,11 @@ class Attendee extends Model
     protected $fillable = [
         'event_id',
         'user_id',
+        'created_by_user_id',
         'phone',
         'name',
+        'first_name',
+        'last_name',
         'email',
         'company',
         'job_title',

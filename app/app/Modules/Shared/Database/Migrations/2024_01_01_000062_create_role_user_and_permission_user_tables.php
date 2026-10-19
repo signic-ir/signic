@@ -27,10 +27,20 @@ return new class extends Migration
 
             $table->unique(['permission_id', 'user_id']);
         });
+
+        Schema::create('permission_role', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('permission_id')->constrained('permissions')->onDelete('cascade');
+            $table->foreignId('role_id')->constrained('roles')->onDelete('cascade');
+            $table->timestamps();
+
+            $table->unique(['permission_id', 'role_id']);
+        });
     }
 
     public function down(): void
     {
+        Schema::dropIfExists('permission_role');
         Schema::dropIfExists('permission_user');
         Schema::dropIfExists('role_user');
     }

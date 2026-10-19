@@ -6,9 +6,9 @@ namespace App\Modules\AccessControl\Enums;
 
 enum ScanResult: string
 {
-    case Success = 'success';
-    case Duplicate = 'duplicate';
-    case NotFound = 'not_found';
-    case Expired = 'expired';
-    case Invalid = 'invalid';
+    case Success = 'SUCCESS';
+    case Duplicate = 'DUPLICATE';
+    case NotFound = 'NOT_FOUND';
+    case Expired = 'EXPIRED';
+    case Invalid = 'INVALID';
 }

@@ -19,6 +19,7 @@ return new class extends Migration
             $table->string('location')->nullable();
             $table->json('layout_config')->nullable();
             $table->timestamps();
+            $table->softDeletes();
 
             $table->index(['exhibitor_id']);
             $table->unique(['event_id', 'number']);

@@ -4,32 +4,30 @@ declare(strict_types=1);
 
 namespace App\Modules\Registration\Events;
 
-use Illuminate\Foundation\Events\Dispatchable;
+use App\Modules\Identity\Models\User;
+use App\Modules\Registration\Models\Attendee;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
-use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Queue\SerializesModels;
+use Illuminate\Foundation\Events\Dispatchable;
 
-class AttendeeRegistered extends Event implements ShouldBroadcast
+class AttendeeRegistered implements ShouldBroadcast
 {
     use Dispatchable, SerializesModels;
 
     /**
      * The attendee model.
-     *
-     * @var \App\Modules\Registration\Models\Attendee
      */
-    public $attendee;
+    public Attendee $attendee;
 
     /**
      * The authenticated user who registered them.
-     *
-     * @var \App\Modules\Identity\Models\User
      */
-    public $registeredBy;
+    public User $registeredBy;
 
     /**
      * Create a new event instance.
      */
-    public function __construct(\App\Modules\Registration\Models\Attendee $attendee, \App\Modules\Identity\Models\User $registeredBy)
+    public function __construct(Attendee $attendee, User $registeredBy)
     {
         $this->attendee = $attendee;
         $this->registeredBy = $registeredBy;

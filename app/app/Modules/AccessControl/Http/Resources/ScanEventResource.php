@@ -19,11 +19,11 @@ class ScanEventResource extends JsonResource
             'ip_address' => $this->ip_address,
             'metadata' => $this->metadata,
             'scanned_at' => $this->scanned_at?->toISOString(),
-            'attendee' => [
+            'attendee' => $this->attendee ? [
                 'id' => $this->attendee->id,
                 'name' => $this->attendee->name,
                 'phone' => $this->attendee->phone,
-            ],
+            ] : null,
         ];
     }
 }

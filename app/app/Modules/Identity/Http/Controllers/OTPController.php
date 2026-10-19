@@ -12,6 +12,15 @@ use App\Modules\Identity\Contracts\OTPServiceInterface;
 
 class OTPController extends Controller
 {
+    /** Maximum OTP requests allowed per phone number within the decay window. */
+    public const OTP_REQUEST_LIMIT = 3;
+
+    /** Maximum OTP verification attempts allowed per phone number within the decay window. */
+    public const OTP_VERIFY_LIMIT = 5;
+
+    /** Decay window, in seconds, for both rate limiters. */
+    public const RATE_LIMIT_DECAY_SECONDS = 60;
+
     protected SMSAdapterInterface $sms;
     protected OTPServiceInterface $otp;
 
@@ -28,11 +37,11 @@ class OTPController extends Controller
         ]);
 
         $key = 'otp_request_' . $validated['phone'];
-        if (RateLimiter::tooManyAttempts($key, 5)) {
+        if (RateLimiter::tooManyAttempts($key, self::OTP_REQUEST_LIMIT)) {
             return response()->json(['message' => 'Too many OTP requests. Please try again later.'], 429);
         }
 
-        RateLimiter::hit($key, 60);
+        RateLimiter::hit($key, self::RATE_LIMIT_DECAY_SECONDS);
 
         $this->otp->send($validated['phone']);
 
@@ -46,15 +55,15 @@ class OTPController extends Controller
     {
         $validated = $request->validate([
             'phone' => ['required', 'string', 'regex:/^[\+]?[0-9]{10,15}$/'],
-            'otp' => ['required', 'string', 'length:6'],
+            'otp' => ['required', 'string', 'digits:6'],
         ]);
 
         $key = 'otp_verify_' . $validated['phone'];
-        if (RateLimiter::tooManyAttempts($key, 5)) {
+        if (RateLimiter::tooManyAttempts($key, self::OTP_VERIFY_LIMIT)) {
             return response()->json(['message' => 'Too many verification attempts.'], 429);
         }
 
-        RateLimiter::hit($key, 60);
+        RateLimiter::hit($key, self::RATE_LIMIT_DECAY_SECONDS);
 
         $user = $this->otp->verify($validated['phone'], $validated['otp']);
 

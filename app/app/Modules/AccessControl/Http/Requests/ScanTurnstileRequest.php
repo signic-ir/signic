@@ -16,9 +16,12 @@ class ScanTurnstileRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'token_hash' => ['required', 'string', 'max:255'],
-            'turnstile_id' => ['required', 'integer', 'exists:turnstiles,id'],
-            'event_type' => ['nullable', 'in:checkin,checkout,force_checkin,force_checkout'],
+            'qr_token' => ['required_without:token_hash', 'string', 'max:255'],
+            'token_hash' => ['required_without:qr_token', 'string', 'max:255'],
+            'turnstile_id' => ['required_without_all:turnstile,turnstile_name'],
+            'turnstile' => ['nullable', 'string', 'max:255'],
+            'turnstile_name' => ['nullable', 'string', 'max:255'],
+            'event_type' => ['nullable', 'in:CHECK_IN,CHECK_OUT,FORCE_CHECK_IN,FORCE_CHECK_OUT'],
             'metadata' => ['nullable', 'array'],
         ];
     }

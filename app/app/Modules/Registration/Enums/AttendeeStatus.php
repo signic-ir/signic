@@ -6,9 +6,11 @@ namespace App\Modules\Registration\Enums;
 
 enum AttendeeStatus: string
 {
-    case Registered = 'registered';
-    case Confirmed = 'confirmed';
-    case Attended = 'attended';
-    case NoShow = 'no_show';
-    case Cancelled = 'cancelled';
+    case Registered = 'REGISTERED';
+    case Confirmed = 'CONFIRMED';
+    case Attended = 'ATTENDED';
+    case NoShow = 'NO_SHOW';
+    case Cancelled = 'CANCELLED';
+    case CheckedIn = 'CHECKED_IN';
+    case CheckedOut = 'CHECKED_OUT';
 }

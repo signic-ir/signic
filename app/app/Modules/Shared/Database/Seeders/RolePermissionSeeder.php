@@ -4,136 +4,117 @@ declare(strict_types=1);
 
 namespace App\Modules\Shared\Database\Seeders;
 
+use App\Modules\Identity\Models\User;
+use App\Modules\Shared\Models\Permission;
+use App\Modules\Shared\Models\Role;
+use App\Modules\Shared\Services\RoleService;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
-use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
-use App\Modules\Identity\Models\User;
 
 class RolePermissionSeeder extends Seeder
 {
+    /**
+     * The permissions of the platform.
+     *
+     * @var array<string, string>
+     */
+    protected array $permissions = [
+        'attendee.create' => 'Create new attendees',
+        'attendee.view' => 'View attendee information',
+        'exhibitor.lead.create' => 'Create leads for exhibitors',
+        'exhibitor.lead.view' => 'View exhibitor leads',
+        'turnstile.operate' => 'Operate turnstile check-in/out',
+        'user.manage' => 'Manage system users',
+    ];
+
+    /**
+     * The roles of the platform.
+     *
+     * @var array<string, string>
+     */
+    protected array $roles = [
+        'super_admin' => 'Full system access',
+        'event_organizer' => 'Manage events and attendees',
+        'exhibitor' => 'Manage exhibitor leads',
+        'staff' => 'Event operations staff',
+    ];
+
+    /**
+     * The permissions granted to every role.
+     *
+     * @var array<string, array<int, string>>
+     */
+    protected array $rolePermissions = [
+        'event_organizer' => ['attendee.create', 'attendee.view'],
+        'exhibitor' => ['exhibitor.lead.create', 'exhibitor.lead.view'],
+        'staff' => ['turnstile.operate', 'attendee.view'],
+    ];
+
     public function run(): void
     {
-        // Reset cached roles and permissions
-        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
-
-        // Create permissions
-        $permissions = [
-            // User management
-            'view-users',
-            'create-users',
-            'update-users',
-            'delete-users',
-
-            // Event management
-            'view-events',
-            'create-events',
-            'update-events',
-            'delete-events',
-
-            // Attendee management
-            'view-attendees',
-            'create-attendees',
-            'update-attendees',
-            'delete-attendees',
-
-            // Access control
-            'manage-turnstiles',
-            'view-scans',
-
-            // Exhibition
-            'view-exhibitors',
-            'create-exhibitors',
-            'update-exhibitors',
-            'delete-exhibitors',
-            'view-leads',
-            'create-leads',
-            'update-leads',
-            'delete-leads',
-            'export-leads',
-        ];
-
-        foreach ($permissions as $permission) {
-            Permission::create(['name' => $permission]);
+        foreach ($this->permissions as $name => $description) {
+            Permission::firstOrCreate(
+                ['name' => $name],
+                ['guard_name' => 'web', 'description' => $description, 'is_system' => true]
+            );
         }
 
-        // Create roles and assign permissions
-        $superAdmin = Role::create([
-            'name' => 'super_admin',
-            'guard_name' => 'web',
-        ]);
+        foreach ($this->roles as $name => $description) {
+            $role = Role::firstOrCreate(
+                ['name' => $name],
+                [
+                    'guard_name' => 'web',
+                    'description' => $description,
+                    'is_system' => true,
+                    'inherits_all' => $name === RoleService::SUPER_ADMIN,
+                ]
+            );
 
-        $organizer = Role::create([
-            'name' => 'organizer',
-            'guard_name' => 'web',
-        ]);
-
-        $operator = Role::create([
-            'name' => 'operator',
-            'guard_name' => 'web',
-        ]);
-
-        $exhibitor = Role::create([
-            'name' => 'exhibitor',
-            'guard_name' => 'web',
-        ]);
-
-        $visitor = Role::create([
-            'name' => 'visitor',
-            'guard_name' => 'web',
-        ]);
-
-        // Assign permissions to roles
-        $superAdmin->givePermissionTo(Permission::all());
-
-        $organizer->givePermissionTo([
-            'view-events',
-            'create-events',
-            'update-events',
-            'view-attendees',
-            'create-attendees',
-            'update-attendees',
-            'view-exhibitors',
-            'create-exhibitors',
-            'view-leads',
-            'create-leads',
-            'update-leads',
-        ]);
-
-        $operator->givePermissionTo([
-            'manage-turnstiles',
-            'view-scans',
-            'view-attendees',
-        ]);
-
-        $exhibitor->givePermissionTo([
-            'view-exhibitors',
-            'create-exhibitors',
-            'update-exhibitors',
-            'view-leads',
-            'create-leads',
-            'update-leads',
-            'export-leads',
-        ]);
-
-        $visitor->givePermissionTo([
-            'view-events',
-            'view-attendees',
-        ]);
-
-        // Create sample users if none exist
-        if (User::count() === 0) {
-            $admin = User::create([
-                'name' => 'System Administrator',
-                'phone' => '+15551234567',
-                'email' => 'admin@signic.dev',
-                'password' => Hash::make('admin123'),
-                'status' => 'active',
-                'phone_verified_at' => now(),
-                'email_verified_at' => now(),
-            ]);
-
-            $admin->assignRole('super_admin');
+            if ($name === RoleService::SUPER_ADMIN && ! $role->inherits_all) {
+                $role->forceFill(['inherits_all' => true])->save();
+            }
         }
+
+        foreach ($this->rolePermissions as $roleName => $permissions) {
+            $role = Role::where('name', $roleName)->first();
+
+            if (! $role) {
+                continue;
+            }
+
+            $permissionIds = Permission::whereIn('name', $permissions)->pluck('id')->all();
+
+            $role->permissions()->syncWithoutDetaching($permissionIds);
+            $role->unsetRelation('permissions');
+        }
+
+        // The super admin inherits the permissions of every other role.
+        app(RoleService::class)->syncSuperAdmin();
+
+        $this->seedAdministrator();
+    }
+
+    /**
+     * Make sure an administrator exists to operate the platform.
+     */
+    protected function seedAdministrator(): void
+    {
+        $phone = '+15551234567';
+
+        if (User::where('phone', $phone)->exists()) {
+            return;
+        }
+
+        $admin = User::create([
+            'name' => 'System Administrator',
+            'phone' => $phone,
+            'email' => 'admin@signic.dev',
+            'password' => Hash::make('admin123'),
+            'status' => 'active',
+            'phone_verified_at' => now(),
+            'email_verified_at' => now(),
+        ]);
+
+        $admin->assignRole(RoleService::SUPER_ADMIN);
     }
 }

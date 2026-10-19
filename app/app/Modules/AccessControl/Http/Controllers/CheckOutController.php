@@ -4,14 +4,17 @@ declare(strict_types=1);
 
 namespace App\Modules\AccessControl\Http\Controllers;
 
-use Illuminate\Http\Request;
-use Illuminate\Http\JsonResponse;
-use App\Modules\AccessControl\DTOs\ScanEventDTO;
 use App\Modules\AccessControl\Contracts\TurnstileServiceInterface;
+use App\Modules\AccessControl\DTOs\ScanEventDTO;
+use App\Modules\AccessControl\Http\Controllers\Concerns\HandlesScanRequests;
 use App\Modules\AccessControl\Http\Middleware\RateLimitScan;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class CheckOutController extends Controller
 {
+    use HandlesScanRequests;
+
     public function __construct(
         protected TurnstileServiceInterface $turnstile
     ) {
@@ -20,19 +23,28 @@ class CheckOutController extends Controller
 
     public function store(Request $request): JsonResponse
     {
-        $validated = $request->validate([
-            'token_hash' => ['required', 'string'],
-            'turnstile_id' => ['required', 'integer', 'exists:turnstiles,id'],
+        $request->merge([
+            'event_type' => $this->normalizeEventType($request->input('event_type')),
         ]);
+
+        $validated = $request->validate($this->scanRules());
+
+        $turnstileId = $this->resolveTurnstileId($validated);
+
+        if (! $turnstileId) {
+            return $this->turnstileNotFoundResponse();
+        }
 
         $dto = ScanEventDTO::fromRequest($validated, $request->ip());
 
-        $result = $this->turnstile->checkOut($dto->tokenHash, $dto->turnstileId, $dto->metadata);
+        $result = $this->turnstile->checkOut(
+            $dto->qrToken,
+            $turnstileId,
+            $dto->metadata,
+            $dto->ip,
+            $dto->eventType === 'FORCE_CHECK_OUT' ? 'FORCE_CHECK_OUT' : 'CHECK_OUT'
+        );
 
-        return response()->json([
-            'success' => $result->success,
-            'message' => $result->message,
-            'data' => $result,
-        ]);
+        return $this->scanResponse($result);
     }
 }

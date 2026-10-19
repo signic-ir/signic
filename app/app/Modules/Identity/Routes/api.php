@@ -5,11 +5,11 @@ use App\Modules\Identity\Http\Controllers\OTPController;
 
 Route::prefix('api/identity')->name('identity.api.')->group(function () {
     Route::post('/otp/request', [OTPController::class, 'request'])
-        ->middleware(['throttle:5,1'])
+        ->middleware(['throttle:60,1,otp_request'])
         ->name('otp.request');
 
     Route::post('/otp/verify', [OTPController::class, 'verify'])
-        ->middleware(['throttle:10,1'])
+        ->middleware(['throttle:60,1,otp_verify'])
         ->name('otp.verify');
 
     Route::middleware(['auth:sanctum'])->group(function () {

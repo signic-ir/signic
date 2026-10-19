@@ -6,16 +6,22 @@ namespace App\Modules\Registration\DTOs;
 
 class AttendeeCreationDTO
 {
+    /**
+     * @param  array<string, mixed>  $metadata
+     */
     public function __construct(
         public readonly string $name,
         public readonly string $phone,
-        public readonly string $email,
-        public readonly string $company,
+        public readonly ?string $email,
+        public readonly ?string $company,
         public readonly ?string $jobTitle,
         public readonly string $ticketType,
         public readonly array $metadata
     ) {}
 
+    /**
+     * @param  array<string, mixed>  $validated
+     */
     public static function fromRequest(array $validated): self
     {
         return new self(

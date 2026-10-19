@@ -6,10 +6,10 @@ namespace App\Modules\Registration\Enums;
 
 enum TicketType: string
 {
-    case General = 'general';
-    case Vip = 'vip';
-    case Speaker = 'speaker';
-    case Press = 'press';
-    case Organizer = 'organizer';
-    case Volunteer = 'volunteer';
+    case General = 'GENERAL';
+    case Vip = 'VIP';
+    case Speaker = 'SPEAKER';
+    case Press = 'PRESS';
+    case Organizer = 'ORGANIZER';
+    case Volunteer = 'VOLUNTEER';
 }

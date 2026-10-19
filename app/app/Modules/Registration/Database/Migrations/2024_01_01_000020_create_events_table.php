@@ -22,7 +22,7 @@ return new class extends Migration
             $table->timestamp('registration_end_at')->nullable();
             $table->unsignedInteger('max_capacity')->nullable();
             $table->boolean('is_registration_open')->default(true);
-            $table->enum('status', ['draft', 'active', 'paused', 'completed', 'cancelled'])->default('draft');
+            $table->enum('status', ['DRAFT', 'ACTIVE', 'PAUSED', 'COMPLETED', 'CANCELLED'])->default('DRAFT');
             $table->json('settings')->nullable();
             $table->timestamps();
             $table->softDeletes();

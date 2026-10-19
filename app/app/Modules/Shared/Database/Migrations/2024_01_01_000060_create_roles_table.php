@@ -10,20 +10,23 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('permissions', function (Blueprint $table) {
+        Schema::create('roles', function (Blueprint $table) {
             $table->id();
             $table->string('name')->unique();
             $table->string('guard_name')->default('web');
             $table->text('description')->nullable();
             $table->boolean('is_system')->default(false);
+            $table->foreignId('parent_role_id')->nullable();
+            $table->json('permissions')->nullable();
             $table->timestamps();
 
             $table->index(['guard_name']);
+            $table->index('parent_role_id');
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('permissions');
+        Schema::dropIfExists('roles');
     }
 };

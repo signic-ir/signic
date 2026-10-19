@@ -2,8 +2,8 @@
 
 namespace Modules\Shared;
 
-use App.Modules\Shared\Models\Role;
-use App.Modules\Shared\Models\Permission;
+use Spatie\Permission\Models\Role;
+use Spatie\Permission\Models\Permission;
 use PHPUnit\Framework\TestCase;
 
 class RolePermissionTest extends TestCase

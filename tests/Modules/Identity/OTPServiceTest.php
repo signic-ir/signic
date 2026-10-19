@@ -2,10 +2,10 @@
 
 namespace Modules\Identity;
 
-use App\Modules\Identity\Contracts\SMSAdapterInterface;
 use App\Modules\Identity\Services\OTPService;
-use Illuminate\Support\Facades\Cache;
-use PHPUnit\Framework\TestCase;
+use App\Modules\Identity\Contracts\SMSAdapterInterface;
+use Illuminate\Support\Facades\Log;
+use Tests\TestCase;
 
 class OTPServiceTest extends TestCase
 {

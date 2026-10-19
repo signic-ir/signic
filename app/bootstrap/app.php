@@ -4,7 +4,7 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 
-return Application::configure(basePath: dirname(__DIR__))
+$app = Application::configure(basePath: dirname(__DIR__))
     ->withProviders([
         App\Providers\EventServiceProvider::class,
         App\Providers\AuthServiceProvider::class,
@@ -23,8 +23,16 @@ return Application::configure(basePath: dirname(__DIR__))
             'can'            => Illuminate\Auth\Middleware\Authorize::class,
             'signed'         => Illuminate\Routing\Middleware\ValidateSignature::class,
         ]);
+        $middleware->prepend([
+            App\Http\Middleware\HandleInertiaRequests::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //
     })
     ->create();
+
+// Set the namespace explicitly for this non-standard project structure
+$app->namespace = 'App\\';
+
+return $app;

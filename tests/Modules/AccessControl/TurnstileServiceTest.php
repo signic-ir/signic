@@ -7,7 +7,7 @@ use App\Modules\Registration\Services\QRService;
 use App\Modules\AccessControl\Services\TurnstileService;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Redis;
-use PHPUnit\Framework\TestCase;
+use Tests\TestCase;
 
 class TurnstileServiceTest extends TestCase
 {
@@ -86,5 +86,10 @@ class TestQRService implements QRServiceInterface
     public function validate(string $token): ?int
     {
         return $this->shouldReturn;
+    }
+
+    public function generateQRCode(string $token): string
+    {
+        return 'data:image/png;base64,test-qr-data';
     }
 }

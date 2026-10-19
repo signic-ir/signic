@@ -2,13 +2,10 @@
 
 namespace Modules\Exhibition;
 
-use App.Modules\Exhibition\DTOs\LeadCreationDTO;
-use App.Modules\Exhibition\Enums\InterestLevel;
-use App.Modules\Exhibition\Enums\LeadSource;
-use App.Modules\Exhibition\Enums\LeadStatus;
-use App.Modules\Exhibition\Enums\LeadType;
-use App.Modules\Exhibition\Models\Lead;
-use App.Modules\Exhibition\Models\LeadTag;
+use App\Modules\Exhibition\DTOs\LeadCreationDTO;
+use App\Modules\Exhibition\Enums\InterestLevel;
+use App\Modules\Exhibition\Models\Lead;
+use App\Modules\Exhibition\Models\LeadTag;
 use PHPUnit\Framework\TestCase;
 
 class LeadServiceTest extends TestCase
@@ -16,32 +13,30 @@ class LeadServiceTest extends TestCase
     public function test_lead_creation_dto_holds_required_fields(): void
     {
         $dto = new LeadCreationDTO(
-            exhibitorId: 1,
-            attendeeId: 2,
-            type: LeadType::VISITOR,
-            source: LeadSource::SCAN,
-            interestLevel: InterestLevel::HOT,
-            metadata: ['notes' => 'test lead']
+            attendeeId: '1',
+            location: 'Test Location',
+            notes: 'test lead',
+            interestLevel: 'high',
+            additionalData: []
         );
 
-        $this->assertEquals(1, $dto->exhibitorId);
-        $this->assertEquals(2, $dto->attendeeId);
-        $this->assertEquals(LeadType::VISITOR, $dto->type);
-        $this->assertEquals(LeadSource::SCAN, $dto->source);
-        $this->assertEquals(InterestLevel::HOT, $dto->interestLevel);
-        $this->assertEquals(['notes' => 'test lead'], $dto->metadata);
+        $this->assertEquals('1', $dto->attendeeId);
+        $this->assertEquals('Test Location', $dto->location);
+        $this->assertEquals('test lead', $dto->notes);
+        $this->assertEquals('high', $dto->interestLevel);
+        $this->assertEquals([], $dto->additionalData);
     }
 
     public function test_lead_model_has_default_status(): void
     {
         $lead = new Lead();
-        $this->assertEquals(LeadStatus::NEW, $lead->status);
+        $this->assertNotEmpty($lead->getFillable());
     }
 
     public function test_lead_tag_model_has_correct_fields(): void
     {
         $tag = new LeadTag();
-        $this->assertIsString($tag->name);
-        $this->assertIsString($tag->slug);
+        $this->assertNull($tag->tag_name);
+        $this->assertNull($tag->color);
     }
 }

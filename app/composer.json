@@ -9,8 +9,10 @@
         "ext-pdo": "*",
         "ext-pgsql": "*",
         "filp/whoops": "^2.15",
+        "inertiajs/inertia-laravel": "^3.0",
         "laravel/framework": "^13.0",
         "laravel/sanctum": "^4.0",
+        "simplesoftwareio/simple-qrcode": "^0.0.4@beta",
         "spatie/laravel-permission": "^6.0"
     },
     "require-dev": {
@@ -19,8 +21,8 @@
     },
     "autoload": {
         "psr-4": {
-            "App\\": "",
-            "Modules\\": "app/Modules/"
+            "App\\": "app/",
+            "App\\Modules\\": "app/Modules/"
         }
     },
     "config": {

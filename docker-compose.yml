@@ -1,20 +1,54 @@
 version: '3.8'
 
 services:
+  # Frontend Build Service (Node/Vite)
+  frontend:
+    image: node:20-alpine
+    working_dir: /app
+    volumes:
+      - ./app:/app
+    command: >
+      sh -c "npm install && npm run build"
+    networks:
+      - signic-network
+    profiles:
+      - build
+
+  # Laravel Application
   app:
     build:
       context: ./app
       dockerfile: Dockerfile
+      target: prod
     ports:
       - "8000:8000"
     environment:
       - APP_ENV=production
-      - DATABASE_URL=postgresql://app_user:app_password@db:5432/signic
-      - REDIS_URL=redis://redis:6379
+      - APP_DEBUG=false
+      - APP_URL=http://localhost
+      - DB_CONNECTION=pgsql
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_DATABASE=signic
+      - DB_USERNAME=app_user
+      - DB_PASSWORD=app_password
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_CLIENT=phpredis
+      - MINIO_ENDPOINT=minio:9000
       - MINIO_BUCKET=signic-uploads
+      - MINIO_ACCESS_KEY=admin
+      - MINIO_SECRET_KEY=minioadmin
+      - MINIO_USE_PATH_STYLE=true
       - MAILPIT_HOST=mailpit
+      - MAILPIT_PORT=11434
+      - BROADCAST_DRIVER=redis
+      - CACHE_DRIVER=redis
+      - QUEUE_CONNECTION=redis
+      - SESSION_DRIVER=redis
     volumes:
-      - pgdata:/app/storage/app
+      - ./app:/app
+      - /data/storage:/app/storage/app
     depends_on:
       db:
         condition: service_healthy
@@ -24,7 +58,13 @@ services:
         condition: service_started
     networks:
       - signic-network
+    healthcheck:
+      test: ["CMD-SHELL", "php artisan --version"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
+  # PostgreSQL Database
   db:
     image: postgres:16-alpine
     environment:
@@ -32,7 +72,7 @@ services:
       POSTGRES_USER: app_user
       POSTGRES_PASSWORD: app_password
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - ${DB_PATH:-pgdata}:/var/lib/postgresql/data
     ports:
       - "5433:5432"
     networks:
@@ -43,6 +83,7 @@ services:
       timeout: 5s
       retries: 5
 
+  # Redis
   redis:
     image: redis:7-alpine
     ports:
@@ -55,28 +96,45 @@ services:
       timeout: 5s
       retries: 5
 
-  horizon:
-    build:
-      context: ./app
-      dockerfile: Dockerfile
-    command: php artisan horizon
-    environment:
-      - APP_ENV=production
-      - DATABASE_URL=postgresql://app_user:app_password@db:5432/signic
-      - REDIS_URL=redis://redis:6379
-    ports:
-      - "5801:5801"
-    volumes:
-      - pgdata:/app/storage/app
-    working_dir: /app
-    depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    networks:
-      - signic-network
+  # Horizon (Queue Workers) - disabled: Laravel Horizon not installed
+  # horizon:
+  #   build:
+  #     context: ./app
+  #     dockerfile: Dockerfile
+  #     target: prod
+  #   command: php artisan horizon
+  #   environment:
+  #     - APP_ENV=production
+  #     - APP_DEBUG=false
+  #     - APP_URL=http://localhost
+  #     - DB_CONNECTION=pgsql
+  #     - DB_HOST=db
+  #     - DB_PORT=5432
+  #     - DB_DATABASE=signic
+  #     - DB_USERNAME=app_user
+  #     - DB_PASSWORD=app_password
+  #     - REDIS_HOST=redis
+  #     - REDIS_PORT=6379
+  #     - REDIS_CLIENT=phpredis
+  #   ports:
+  #     - "5801:5801"
+  #   volumes:
+  #     - horizon_data:/app/storage/app
+  #   depends_on:
+  #     db:
+  #       condition: service_healthy
+  #     redis:
+  #       condition: service_healthy
+  #   networks:
+  #     - signic-network
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "php artisan horizon:status || exit 1"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+  #     start_period: 40s
 
+  # MinIO (S3-compatible storage)
   minio:
     image: minio/minio:latest
     ports:
@@ -87,18 +145,20 @@ services:
       MINIO_ROOT_PASSWORD: minioadmin
       MINIO_DOMAIN: minio
     volumes:
-      - minio-data:/data
+      - minio_data:/data
     command: server /data --console-address ":9001"
     networks:
       - signic-network
 
+  # Mailpit (Email testing)
   mailpit:
     image: axllent/mailpit:latest
     ports:
       - "11434:11434"
+      - "8025:8025"
     environment:
-      - MAILPIT_HOST=mailpit
-      - MAILPIT_PORT=11434
+      MP_SMTP_AUTH_ACCEPT_ANY: 1
+      MP_SMTP_AUTH_ALLOW_INSECURE: 1
     networks:
       - signic-network
     healthcheck:
@@ -107,9 +167,28 @@ services:
       timeout: 5s
       retries: 5
 
+  # Nginx (Reverse Proxy + Static Assets)
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./nginx/html:/usr/share/nginx/html:ro
+      - ./app/public:/app/public:ro
+      - ./nginx/logs:/var/log/nginx
+    depends_on:
+      - app
+    networks:
+      - signic-network
+
 volumes:
   pgdata:
-  minio-data:
+    driver: local
+  minio_data:
+    driver: local
 
 networks:
   signic-network:

@@ -1,1 +1,77 @@
-storage/logs/*
+# Ignore everything in the app directory except source code
+# This is needed because the app directory gets mounted from the host
+
+# Build artifacts
+public/build/
+public/storage/
+
+# Vendor dependencies
+vendor/
+
+# Node modules
+node_modules/
+
+# Environment files
+.env
+.env.example
+
+# Cache and logs
+storage/logs/
+storage/framework/cache/
+storage/framework/views/
+storage/framework/sessions/
+
+# PHPUnit
+.phpunit.result.cache
+phpunit.xml
+
+# Node package files
+package.json
+package-lock.json
+
+# Additional config files
+vite.config.js
+
+# Logs
+app/storage/logs/
+
+# Other temporary files
+*.tmp
+*.log
+*.pid
+*.sock
+
+# Test files (if they shouldn't be committed)
+tests/**/temp/
+tests/**/temp_*
+
+# PHP CS Fixer
+.php-cs-fixer.cache
+
+# Laravel coverage report
+coverage/
+
+# IDE
+.idea/
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor backups
+*.bak
+*.orig
+*.swo
+*.swp
+
+# Session
+app/storage/framework/sessions/*
+
+# Cache
+app/storage/framework/cache/*
+
+# Tests
+tests/**/storage/
+tests/**/bootstrap/cache/
+vendor

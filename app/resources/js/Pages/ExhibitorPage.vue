@@ -24,9 +24,9 @@
         </div>
 
         <div class="mt-4 text-center">
-          <router-link :to="`/exhibitor/${exhibitor.id}`" class="text-indigo-600 hover:text-indigo-500 text-sm">
+          <Link href="/exhibitors" class="text-indigo-600 hover:text-indigo-500 text-sm">
             View Details
-          </router-link>
+          </Link>
         </div>
       </div>
 
@@ -41,6 +41,7 @@
 
 <script>
 import { ref, computed } from 'vue';
+import { Link } from '@inertiajs/vue3';
 import axios from 'axios';
 
 export default {

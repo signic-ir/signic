@@ -151,7 +151,7 @@ Vue Router is **not** used (see §6, D3).
 
 | URL | Inertia component | Vue file | Auth | Purpose |
 |---|---|---|---|---|
-| `/` | `Dashboard` | `Pages/DashboardPage.vue` | yes | Landing dashboard |
+| `/` | `DashboardPage` | `Pages/DashboardPage.vue` | yes | Landing dashboard |
 | `/login` | `LoginPage` | `Pages/LoginPage.vue` | no | Phone + OTP sign-in |
 | `/register` | `RegisterPage` | `Pages/RegisterPage.vue` | yes | Register an attendee |
 | `/qr` | `AttendeeQRPage` | `Pages/AttendeeQRPage.vue` | yes | Show the attendee's QR badge |
@@ -160,8 +160,20 @@ Vue Router is **not** used (see §6, D3).
 
 > **The Inertia component name and the Vue file name must match exactly.**
 > `app.js` resolves a page with `pages['./Pages/' + name + '.vue']`, so
-> `Inertia::render('Dashboard')` requires a file called `Dashboard.vue`.
+> `Inertia::render('DashboardPage')` requires a file called `DashboardPage.vue`.
 > Either the render call or the file must be renamed — but they must agree.
+> The dashboard is rendered as `DashboardPage` (the file kept its name).
+
+**`/qr` takes the attendee from the query string.** `RegisterPage` redirects to
+`/qr?attendee_id=<id>` after a successful registration. The QR page reads that
+value and calls `GET /api/registration/attendees/{attendee_id}/qr`; when the
+parameter is absent it falls back to the first entry of
+`GET /api/registration/attendees`. No id is ever hardcoded in the frontend.
+
+**`/register` takes the event from the live event list.** The page loads
+`GET /api/registration/events` and renders a dropdown. When exactly one event
+exists it is selected automatically and the dropdown is disabled; otherwise the
+user must pick one. The selected `event_id` is sent with the attendee payload.
 
 ### 3.2 Layout contract
 
@@ -272,18 +284,22 @@ Seeded by `App\Modules\Shared\Database\Seeders\RolePermissionSeeder`.
 Everything in this list is a **defect in the code**, not a decision to change
 the spec. Each entry names the fix that restores spec compliance.
 
-| # | Where | Defect | Fix |
-|---|---|---|---|
-| **D1** | `routes/web.php:9` | `Inertia::render('Dashboard')` but the file is `Pages/DashboardPage.vue` → Inertia cannot resolve the page | Rename the render call to `DashboardPage`, or rename the file to `Dashboard.vue` — and apply the same to `app.blade.php` consumers |
-| **D2** | `app.blade.php:20`, `welcome.blade.php:20` | Both declare `<div id="app"></div>` **and** `@inertia`, producing two elements with `id="app"`. `getElementById('app')` returns the empty one, which has no `data-page` | Delete the manual `<div id="app"></div>`; keep only `@inertia` |
-| **D3** | `app.js` | Vue Router is never registered, yet `router-link` is used in `App.vue`, `DashboardPage.vue`, `LoginPage.vue`. `router/index.js` is dead code and references a non-existent `CheckOutPage.vue` | Delete `router/index.js`; replace every `<router-link to=…>` with Inertia `<Link href=…>` |
-| **D4** | `LoginPage.vue:107` | Calls `POST /api/identity/otp/send` — the route is `/otp/request` | Change the path to `/api/identity/otp/request` |
-| **D5** | `useAuth.js:30` | Calls `identity/profile` (no `/api` prefix, wrong name) — the route is `/api/identity/me` | Change the path to `/api/identity/me` |
-| **D6** | `CheckInPage.vue:76,106` | Calls `/api/accesscontrol/checkin` and `/api/accesscontrol/checkout` — the prefix is `/api/access` | Change both paths |
-| **D7** | `RegisterPage.vue:143` | `event_id: 1` is hardcoded | Load the event list (`GET /api/registration/events`) and let the user pick; fall back to the first event |
-| **D8** | `AttendeeQRPage.vue:118` | Fetches `/api/registration/attendees/1/qr` — id `1` is hardcoded and the `?attendee_id=` query is ignored | Read `attendee_id` from the query string |
-| **D9** | `RegisterPage.vue:80-85` | Ticket type option values are lower case (`general`, `vip`, …) but the DB enum is upper case — the Postgres CHECK constraint rejects them | Use the upper-case values from §4.1 |
-| **D10** | `routes/web.php` | No `/checkout` route, but the dead Vue router declared one | Remove the dead route (the SPA has no check-out page) or add a page + route |
+**Status: all ten entries are resolved (2026-10-21).** The table below is kept
+as the historical record of what was wrong; the code now matches the spec and
+the drift checker exits `0`.
+
+| # | Where | Defect | Fix | Status |
+|---|---|---|---|---|
+| **D1** | `routes/web.php:9` | `Inertia::render('Dashboard')` but the file is `Pages/DashboardPage.vue` → Inertia cannot resolve the page | Rename the render call to `DashboardPage`, or rename the file to `Dashboard.vue` — and apply the same to `app.blade.php` consumers | ✅ render call renamed to `DashboardPage` |
+| **D2** | `app.blade.php:20`, `welcome.blade.php:20` | Both declare `<div id="app"></div>` **and** `@inertia`, producing two elements with `id="app"`. `getElementById('app')` returns the empty one, which has no `data-page` | Delete the manual `<div id="app"></div>`; keep only `@inertia` | ✅ both layouts keep only `@inertia` |
+| **D3** | `app.js` | Vue Router is never registered, yet `router-link` is used in `App.vue`, `DashboardPage.vue`, `LoginPage.vue`. `router/index.js` is dead code and references a non-existent `CheckOutPage.vue` | Delete `router/index.js`; replace every `<router-link to=…>` with Inertia `<Link href=…>` | ✅ router deleted, all pages use `<Link>` |
+| **D4** | `LoginPage.vue:107` | Calls `POST /api/identity/otp/send` — the route is `/otp/request` | Change the path to `/api/identity/otp/request` | ✅ path fixed |
+| **D5** | `useAuth.js:30` | Calls `identity/profile` (no `/api` prefix, wrong name) — the route is `/api/identity/me` | Change the path to `/api/identity/me` | ✅ path fixed |
+| **D6** | `CheckInPage.vue:76,106` | Calls `/api/accesscontrol/checkin` and `/api/accesscontrol/checkout` — the prefix is `/api/access` | Change both paths | ✅ both paths fixed |
+| **D7** | `RegisterPage.vue:143` | `event_id: 1` is hardcoded | Load the event list (`GET /api/registration/events`) and let the user pick; fall back to the first event | ✅ event dropdown, auto-selected when only one event exists |
+| **D8** | `AttendeeQRPage.vue:118` | Fetches `/api/registration/attendees/1/qr` — id `1` is hardcoded and the `?attendee_id=` query is ignored | Read `attendee_id` from the query string | ✅ read from `?attendee_id=`, falls back to the user's first attendee |
+| **D9** | `RegisterPage.vue:80-85` | Ticket type option values are lower case (`general`, `vip`, …) but the DB enum is upper case — the Postgres CHECK constraint rejects them | Use the upper-case values from §4.1 | ✅ upper-cased |
+| **D10** | `routes/web.php` | No `/checkout` route, but the dead Vue router declared one | Remove the dead route (the SPA has no check-out page) or add a page + route | ✅ resolved with the dead router (no `/checkout` route) |
 
 ---
 

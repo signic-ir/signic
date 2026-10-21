@@ -27,7 +27,7 @@ export function useAuth() {
 
   async function getCurrentUser() {
     try {
-      const response = await axios.get(`${API_BASE}identity/profile`, {
+      const response = await axios.get(`${API_BASE}api/identity/me`, {
         headers: {
           Authorization: `Bearer ${token.value}`,
         },

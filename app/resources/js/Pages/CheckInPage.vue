@@ -73,7 +73,7 @@ export default {
       error.value = '';
 
       try {
-        const response = await axios.post('/api/accesscontrol/checkin', {
+        const response = await axios.post('/api/access/checkin', {
           token: qrToken.value,
           attendee_id: attendee.value.id,
         });
@@ -103,7 +103,7 @@ export default {
       error.value = '';
 
       try {
-        const response = await axios.post('/api/accesscontrol/checkout', {
+        const response = await axios.post('/api/access/checkout', {
           token: qrToken.value,
           attendee_id: attendee.value.id,
         });

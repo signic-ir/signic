@@ -241,11 +241,11 @@ foreach (['app.blade.php', 'welcome.blade.php'] as $layout) {
     $checks++;
 
     $contents = (string) file_get_contents($path);
+    // The @inertia directive emits its own root mount point, so a literal
+    // id="app" next to it is a duplicate. Total mount points = literal count
+    // + one for @inertia when present.
     $count = preg_match_all('/id="app"/', $contents);
-
-    // The @inertia directive emits its own mount point, so a literal
-    // id="app" next to it is a duplicate.
-    if (str_contains($contents, '@inertia') && $count > 0) {
+    if (str_contains($contents, '@inertia')) {
         $count++;
     }
 

@@ -76,7 +76,7 @@
       </form>
 
       <div class="text-center text-sm text-slate-500">
-        Need an account? <router-link to="/register" class="font-medium text-indigo-600 hover:text-indigo-500">Register</router-link>
+        Need an account? <Link href="/register" class="font-medium text-indigo-600 hover:text-indigo-500">Register</Link>
       </div>
     </div>
   </div>
@@ -84,6 +84,7 @@
 
 <script>
 import { ref } from 'vue';
+import { Link } from '@inertiajs/vue3';
 import { useAuth } from '../composables/useAuth.js';
 import axios from 'axios';
 
@@ -104,7 +105,7 @@ export default {
 
       try {
         // First, request OTP (if not already sent)
-        await axios.post('/api/identity/otp/send', {
+        await axios.post('/api/identity/otp/request', {
           phone: form.value.phone,
         });
 

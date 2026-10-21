@@ -59,18 +59,18 @@
       <div class="card">
         <h3 class="text-lg font-semibold text-slate-900 mb-4">Quick Actions</h3>
         <div class="space-y-3">
-          <router-link to="/register" class="block w-full btn btn-primary text-center">
+          <Link href="/register" class="block w-full btn btn-primary text-center">
             Register New Attendee
-          </router-link>
-          <router-link to="/qr" class="block w-full btn btn-secondary text-center">
+          </Link>
+          <Link href="/qr" class="block w-full btn btn-secondary text-center">
             View My QR Badge
-          </router-link>
-          <router-link to="/checkin" class="block w-full btn btn-primary text-center">
+          </Link>
+          <Link href="/checkin" class="block w-full btn btn-primary text-center">
             Check In/Out
-          </router-link>
-          <router-link to="/exhibitors" class="block w-full btn btn-secondary text-center">
+          </Link>
+          <Link href="/exhibitors" class="block w-full btn btn-secondary text-center">
             View Exhibitors
-          </router-link>
+          </Link>
         </div>
       </div>
 
@@ -88,6 +88,7 @@
 
 <script>
 import { useAuth } from '../composables/useAuth.js';
+import { Link } from '@inertiajs/vue3';
 
 export default {
   name: 'DashboardPage',

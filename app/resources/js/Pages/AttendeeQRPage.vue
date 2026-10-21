@@ -77,9 +77,9 @@
           <button @click="downloadQR" class="btn btn-secondary">
             Download QR
           </button>
-          <router-link to="/" class="btn btn-primary">
+          <Link href="/" class="btn btn-primary">
             Back to Dashboard
-          </router-link>
+          </Link>
         </div>
       </div>
     </div>
@@ -88,15 +88,16 @@
       <span class="text-4xl mb-4 block">🎫</span>
       <h3 class="text-lg font-semibold text-slate-900 mb-2">No Attendee Found</h3>
       <p class="text-slate-500 mb-4">You haven't registered any attendees yet.</p>
-      <router-link to="/register" class="btn btn-primary inline-block">
+      <Link href="/register" class="btn btn-primary inline-block">
         Register First Attendee
-      </router-link>
+      </Link>
     </div>
   </div>
 </template>
 
 <script>
 import { ref, computed } from 'vue';
+import { Link } from '@inertiajs/vue3';
 import axios from 'axios';
 
 export default {
@@ -108,14 +109,30 @@ export default {
     const loading = ref(true);
     const error = ref('');
 
+    // The attendee is not hardcoded: it comes from the query string
+    // (/qr?attendee_id=5) and falls back to the first of the user's attendees.
+    const queryAttendeeId = new URLSearchParams(window.location.search).get('attendee_id');
+
     async function fetchQR() {
       loading.value = true;
       error.value = '';
 
       try {
-        // For now, we'll use a placeholder attendee
-        // In a real app, this would come from the URL param or user's attendees
-        const response = await axios.get('/api/registration/attendees/1/qr');
+        let attendeeId = queryAttendeeId;
+
+        if (!attendeeId) {
+          const listResponse = await axios.get('/api/registration/attendees');
+          const attendees = listResponse.data.attendees || listResponse.data.data || [];
+
+          if (attendees.length === 0) {
+            loading.value = false;
+            return;
+          }
+
+          attendeeId = attendees[0].id;
+        }
+
+        const response = await axios.get(`/api/registration/attendees/${attendeeId}/qr`);
         attendee.value = response.data.attendee;
         qrCodeUrl.value = response.data.qr_code_url;
         qrToken.value = response.data.qr_token || 'token-will-be-provided';
@@ -129,22 +146,25 @@ export default {
 
     const ticketTypeBadgeClass = (type) => {
       const classes = {
-        general: 'badge-info',
-        vip: 'badge-success',
-        speaker: 'badge-warning',
-        press: 'badge-info',
-        organizer: 'badge-primary',
-        volunteer: 'badge-success',
+        GENERAL: 'badge-info',
+        VIP: 'badge-success',
+        SPEAKER: 'badge-warning',
+        PRESS: 'badge-info',
+        ORGANIZER: 'badge-primary',
+        VOLUNTEER: 'badge-success',
       };
       return classes[type] || 'badge';
     };
 
     const statusBadgeClass = (status) => {
       const classes = {
-        registered: 'badge-info',
-        checked_in: 'badge-success',
-        checked_out: 'badge-warning',
-        cancelled: 'badge-danger',
+        REGISTERED: 'badge-info',
+        CONFIRMED: 'badge-info',
+        ATTENDED: 'badge-success',
+        CHECKED_IN: 'badge-success',
+        CHECKED_OUT: 'badge-warning',
+        NO_SHOW: 'badge-warning',
+        CANCELLED: 'badge-danger',
       };
       return classes[status] || 'badge';
     };

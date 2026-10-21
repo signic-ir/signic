@@ -72,6 +72,22 @@
             </div>
 
             <div class="space-y-2">
+              <label for="event_id" class="block text-sm font-medium text-slate-700">Event</label>
+              <select
+                id="event_id"
+                v-model="form.event_id"
+                class="input"
+                :disabled="events.length === 1"
+              >
+                <option value="" disabled>Select an event</option>
+                <option v-for="event in events" :key="event.id" :value="event.id">
+                  {{ event.name }}
+                </option>
+              </select>
+              <p v-if="errors.event_id" class="input-error">{{ errors.event_id }}</p>
+            </div>
+
+            <div class="space-y-2">
               <label for="ticket_type" class="block text-sm font-medium text-slate-700">Ticket Type</label>
               <select
                 id="ticket_type"
@@ -80,12 +96,12 @@
                 required
               >
                 <option value="">Select a ticket type</option>
-                <option value="general">General</option>
-                <option value="vip">VIP</option>
-                <option value="speaker">Speaker</option>
-                <option value="press">Press</option>
-                <option value="organizer">Organizer</option>
-                <option value="volunteer">Volunteer</option>
+                <option value="GENERAL">General</option>
+                <option value="VIP">VIP</option>
+                <option value="SPEAKER">Speaker</option>
+                <option value="PRESS">Press</option>
+                <option value="ORGANIZER">Organizer</option>
+                <option value="VOLUNTEER">Volunteer</option>
               </select>
               <p v-if="errors.ticket_type" class="input-error">{{ errors.ticket_type }}</p>
             </div>
@@ -140,7 +156,7 @@ export default {
   setup() {
     const { user } = useAuth();
     const form = ref({
-      event_id: 1, // Default event ID, should come from user context
+      event_id: '',
       name: '',
       phone: '',
       email: '',
@@ -149,8 +165,29 @@ export default {
       ticket_type: '',
       metadata: '',
     });
+    const events = ref([]);
     const errors = ref({});
     const submitting = ref(false);
+
+    // The event is not hardcoded: it is selected from the live event list.
+    // When only one event exists it is picked automatically; otherwise the
+    // user chooses one.
+    async function loadEvents() {
+      try {
+        const response = await axios.get('/api/registration/events');
+        events.value = response.data.events || response.data.data || [];
+
+        if (events.value.length === 1) {
+          form.value.event_id = events.value[0].id;
+        } else if (events.value.length > 1) {
+          form.value.event_id = '';
+        }
+      } catch (err) {
+        console.error('Error fetching events:', err);
+      }
+    }
+
+    loadEvents();
 
     const metadata = computed(() => {
       try {
@@ -184,6 +221,10 @@ export default {
 
       if (!form.value.ticket_type) {
         errors.value.ticket_type = 'Ticket type is required';
+      }
+
+      if (!form.value.event_id) {
+        errors.value.event_id = 'Event is required';
       }
 
       if (Object.keys(errors.value).length > 0) {
@@ -221,6 +262,7 @@ export default {
     return {
       user,
       form,
+      events,
       errors,
       submitting,
       handleSubmit,

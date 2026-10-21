@@ -9,11 +9,11 @@ Route::get('/', function () {
 
 Route::get('/login', function () {
     return Inertia::render('LoginPage');
-});
+})->name('login');
 
 Route::get('/register', function () {
     return Inertia::render('RegisterPage');
-});
+})->name('register');
 
 Route::get('/qr', function () {
     return Inertia::render('AttendeeQRPage');

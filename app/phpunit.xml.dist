@@ -1,14 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Copy this file to `phpunit.xml` before running the test suite:
+
+        cp phpunit.xml.dist phpunit.xml
+
+    `phpunit.xml` is git-ignored so that local overrides stay local.
+-->
 <phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
          bootstrap="vendor/autoload.php"
          colors="true"
-         executionOrder="processor"
-         forceCoversTargetShowUncoveredFiles="false"
-         showUncoveredFiles="false"
-         beStrictAboutCoversMetaEnvironments="true"
          failOnEmptyTestSuite="true"
-         parallelism="4">
+         cacheDirectory=".phpunit.cache">
     <php>
         <env name="APP_ENV" value="testing"/>
         <env name="APP_KEY" value="base64:SGVsbG8gV29ybGQhIFRoaXMgaXMgYSBzZWNyZXQga2V5IQ=="/>
@@ -30,9 +33,9 @@
         </testsuite>
     </testsuites>
 
-    <coverage>
+    <source>
         <include>
             <directory suffix=".php">app/Modules</directory>
         </include>
-    </coverage>
+    </source>
 </phpunit>

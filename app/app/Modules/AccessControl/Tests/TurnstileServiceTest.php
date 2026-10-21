@@ -4,32 +4,27 @@ declare(strict_types=1);
 
 namespace App\Modules\AccessControl\Tests;
 
-use App\Modules\AccessControl\Contracts\TurnstileServiceInterface;
 use App\Modules\AccessControl\DTOs\ScanEventDTO;
 use App\Modules\AccessControl\Services\TurnstileService;
 use App\Modules\Registration\Contracts\QRServiceInterface;
-use Mockery;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 class TurnstileServiceTest extends TestCase
 {
-    protected function tearDown(): void
-    {
-        Mockery::close();
-
-        parent::tearDown();
-    }
-
     #[Test]
     public function it_rejects_an_invalid_qr_token(): void
     {
-        $qrService = Mockery::mock(QRServiceInterface::class);
-        $qrService->shouldReceive('validate')->andReturnNull();
+        /** @var QRServiceInterface $qrService */
+        $qrService = $this->createMock(QRServiceInterface::class);
+        $qrService->expects($this->once())
+            ->method('validate')
+            ->willReturn(null);
+
         $this->app->instance(QRServiceInterface::class, $qrService);
 
         /** @var TurnstileService $service */
-        $service = $this->app->make(TurnstileServiceInterface::class);
+        $service = $this->app->make(TurnstileService::class);
 
         $result = $service->checkIn('not-a-valid-token', 1);
 

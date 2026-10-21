@@ -26,6 +26,7 @@ storage/app/
 
 # PHPUnit
 .phpunit.result.cache
+.phpunit.cache/
 phpunit.xml
 
 # Node package files

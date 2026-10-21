@@ -1,123 +1,53 @@
-# Phase 3-4 Test Suite - Signic Modular Platform
+# Test Suite - Signic Modular Platform
 
-This document outlines the testing strategy for Signic, a modular event registration and lead-capture platform.
+This document describes the testing strategy and the current test suite of Signic, a modular event registration and lead-capture platform.
 
-## Phase 3: Module Infrastructure Tests
+## Test Locations
 
-### Identity Module Tests
-- **OTPServiceTest.php**: Unit tests for OTP generation, SMS sending, and verification
-- **Unit/OTPTest.php**: Modern Pest tests for OTP functionality
+The test suite lives next to the code it exercises. The Laravel application root is `app/`, and each module owns a `Tests/` directory:
 
-### Registration Module Tests
-- **QRServiceTest.php**: QR token generation, validation, and QR code generation
-- **Feature/RegistrationFlowTest.php**: Integration tests for attendee registration flow
-
-### AccessControl Module Tests
-- **TurnstileServiceTest.php**: Turnstile check-in/out operations, QR validation, and race condition handling
-
-### Exhibition Module Tests
-- **LeadServiceTest.php**: Lead creation DTO, lead model, and lead tag model
-
-### Shared Module Tests
-- **RolePermissionTest.php**: Role and permission model structure
-
-## Phase 4: Testing Architecture
-
-### Test Directory Structure
 ```
-tests/
-├── TestCase.php              # Base test case
-├── CreatesApplication.php    # Application bootstraps
-├── Pest.php                  # Pest framework configuration
-├── TestCase.php              # Laravel TestCase
-├── Feature/
-│   ├── RegistrationFlowTest.php
-│   └── AuthenticationTest.php
-├── Unit/
-│   ├── OTPTest.php
-│   └── ValidationTest.php
-├── Modules/
-│   ├── Identity/
-│   │   ├── OTPServiceTest.php
-│   │   └── Unit/OTPTest.php
-│   ├── Registration/
-│   │   └── QRServiceTest.php
-│   ├── AccessControl/
-│   │   └── TurnstileServiceTest.php
-│   ├── Exhibition/
-│   │   └── LeadServiceTest.php
-│   └── Shared/
-│       └── RolePermissionTest.php
+app/
+├── app/Modules/
+│   ├── AccessControl/Tests/TurnstileServiceTest.php
+│   ├── Exhibition/Tests/LeadServiceTest.php
+│   ├── Identity/Tests/OTPServiceTest.php
+│   ├── Registration/Tests/AttendeeServiceTest.php
+│   ├── Registration/Tests/QRServiceTest.php
+│   └── Shared/Tests/CoreServiceTest.php
+└── tests/
+    ├── TestCase.php              # Tests\TestCase - base class for the module tests
+    └── CreatesApplication.php    # Boots the Laravel application for a test
 ```
 
-### Test Categories
+`app/tests/` holds only the shared base classes. The `Tests\` namespace is mapped to it through the `autoload-dev` section of `app/composer.json`.
 
-1. **Unit Tests** (Tests/Unit/)
-   - Core logic verification
-   - Helper functions
-   - Utility services
+## Running the Suite
 
-2. **Module Tests** (Tests/Modules/*/)
-   - Individual module service testing
-   - Contract adherence verification
-   - Integration between service components
+The application runs inside the `signic-app-1` container, where the `app/` directory is mounted at `/app`:
 
-3. **Feature Tests** (Tests/Feature/)
-   - End-to-end workflow testing
-   - Controller action verification
-   - Database interaction tests
+```bash
+docker exec signic-app-1 sh -c 'cd /app && ./vendor/bin/phpunit --configuration phpunit.xml'
+```
 
-### Testing Coverage Strategy
+The configuration file is `app/phpunit.xml`. It is git-ignored so that local overrides stay local; the shared version is tracked as `app/phpunit.xml.dist`:
 
-#### Identity Module
-- OTP generation (length, format, uniqueness)
-- SMS adapter interface compliance
-- OTP cache storage and retrieval
-- OTP verification (success, failure, expired)
-- Rate limiting (where implemented)
+```bash
+cp app/phpunit.xml.dist app/phpunit.xml
+```
 
-#### Registration Module
-- QR token generation (attendee ID + nonce)
-- QR token signature validation
-- QR token expiration handling
-- Base64 encoding/decoding
-- Malformed token rejection
+## Test Configuration
 
-#### AccessControl Module
-- QR token validation integration
-- Turnstile race condition prevention (Redis locks)
-- Idempotent check-in/check-out
-- Database persistence verification
-- Concurrent access safety
-
-#### Exhibition Module
-- DTO validation and structure
-- Lead creation workflows
-- Lead status transitions
-- Relationship mapping
-
-#### Shared Module
-- Role hierarchy and permissions
-- Pivot table relationships
-- Guard name validation
-- Permission inheritance
-
-### Test Configuration
-
-**phpunit.xml**: PHPUnit configuration with:
-- 4 parallel test processes
-- Custom cache and queue configuration
-- Coverage reporting on application modules only
-
-**Pest.php**: Pest framework configuration
-- Module-specific test groupings
-- Database refresh for each test suite
+**`phpunit.xml`** — PHPUnit 11 configuration with:
+- The `Module Tests` suite, scanning `./app/Modules` for `*Test.php`
+- Coverage reporting on the application modules only (`<source><include>`)
+- An isolated in-memory SQLite database
 
 ### Test Environment
 
 ```env
 APP_ENV=testing
-APP_KEY=base64:TESTKEY...
+APP_KEY=base64:SGVsbG8gV29ybGQhIFRoaXMgaXMgYSBzZWNyZXQga2V5IQ==
 CACHE_DRIVER=array
 SESSION_DRIVER=array
 QUEUE_CONNECTION=sync
@@ -126,58 +56,38 @@ DB_DATABASE=:memory:
 SMS_PROVIDER=null
 ```
 
-### Key Test Files Created
+## Current Coverage
 
-1. **tests/Modules/Identity/OTPServiceTest.php**
-   - Tests OTP generation, sending, and verification
-   - Mock SMS adapter for testing
-
-2. **tests/Modules/Registration/QRServiceTest.php**
-   - Tests QR token lifecycle
-   - Signature validation
-   - Error handling
-
-3. **tests/Modules/AccessControl/TurnstileServiceTest.php**
-   - Turnstile check-in/out operations
-   - Race condition handling
-   - Token validation integration
-
-4. **tests/Modules/Exhibition/LeadServiceTest.php**
-   - DTO structure verification
-   - Lead model properties
-
-5. **tests/Modules/Shared/RolePermissionTest.php**
-   - Role and permission model structure
-
-6. **tests/Unit/OTPTest.php**
-   - Modern Pest unit tests for OTP logic
-
-7. **tests/Feature/RegistrationFlowTest.php**
-   - End-to-end registration flow test
-
-## Implementation Notes
+| Test class | Module | Covers |
+|---|---|---|
+| `CoreServiceTest` | Shared | Role/permission hierarchy, permission inheritance, super-admin bypass |
+| `LeadServiceTest` | Exhibition | Lead creation, interest-level defaulting, missing attendee, tag add/remove, lead filtering |
+| `AttendeeServiceTest` | Registration | Attendee registration, QR token issuing and validation, QR badge creation and rotation, print job queueing |
+| `OTPServiceTest` | Identity | OTP generation and delivery, verification, rejection of wrong codes, expiry, code consistency |
+| `QRServiceTest` | Registration | QR token generation, signature validation, malformed and expired token rejection, payload round-trip |
+| `TurnstileServiceTest` | AccessControl | Invalid QR token rejection, scan DTO parsing and defaults |
 
 ### Testing Challenges
-- No runtime environment to execute tests
-- Tests created for documentation and validation purposes only
-- Configuration suitable for local development
+
+- **No `mockery/mockery` and no `fakerphp/faker`**: neither package is vendored, and the container has no route to packagist, so they cannot be installed. Use PHPUnit's `$this->createMock()` for test doubles and hardcoded fixture values instead of faker.
+- **No `$this->artisan(...)` and no `RefreshDatabase`**: `PendingCommand::mockConsoleOutput()` calls `Mockery::mock()` unconditionally, and `RefreshDatabase` routes through `$this->artisan('migrate:fresh')`. Both therefore fail with `Class "Mockery" not found`. Use `Artisan::call('migrate', ['--force' => true, '--path' => [...]])` together with the `DatabaseTransactions` trait.
+- **No model factories**: the codebase ships no `*Factory.php` and uses no `HasFactory` trait. Build Eloquent rows directly (`Event::create()`, `User::create()`, `Attendee::create()`, `Exhibitor::create()`).
+- **Migrations must be driver-aware**: the test database is SQLite, so PostgreSQL-only DDL (`DROP CONSTRAINT`, `::text` casts, `ALTER COLUMN ... SET DEFAULT`) has to be gated behind a `pgsql` check inside the migration.
 
 ### Dependencies
+
 The test setup includes:
 - PHPUnit 11.0+ for unit testing
-- Pest 3.0+ for modern testing approach
-- Laravel testing utilities (RefreshDatabase)
+- Laravel testing utilities (`DatabaseTransactions`)
 
 ### Future Enhancements
-- Database migrations for testing
 - Mailtrap for email testing
 - Local Redis for lock testing
 - File system for storage testing
 
 ## Next Steps
 
-1. Run tests after setting up Laravel environment
-2. Add more integration tests for controllers
-3. Create API documentation tests
-4. Add performance and load testing
-5. Include feature flag testing
+1. Add integration tests for the module controllers
+2. Create API documentation tests
+3. Add performance and load testing
+4. Include feature flag testing

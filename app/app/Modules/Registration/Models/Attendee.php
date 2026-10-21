@@ -7,6 +7,7 @@ namespace App\Modules\Registration\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Modules\Identity\Models\User;
 use App\Modules\Registration\Models\QRBadge;
@@ -78,7 +79,7 @@ class Attendee extends Model
     /**
      * Get the QR badge for this attendee.
      */
-    public function qrBadge(): BelongsTo
+    public function qrBadge(): HasOne
     {
         return $this->hasOne(QRBadge::class);
     }

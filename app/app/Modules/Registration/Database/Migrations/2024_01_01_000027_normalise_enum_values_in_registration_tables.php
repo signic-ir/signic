@@ -11,18 +11,25 @@ use Illuminate\Support\Facades\DB;
  * The tables were created with lower case enum values while the platform
  * spells every status in upper case. The migration is idempotent, it also
  * runs cleanly on a database that was created with the current migrations.
+ *
+ * Only PostgreSQL needs the constraint juggling: on SQLite and MySQL the enum
+ * columns are plain strings, so normalising the stored values is enough.
  */
 return new class extends Migration
 {
     public function up(): void
     {
-        $this->dropConstraint('attendees', 'attendees_status_check');
-        $this->dropConstraint('attendees', 'attendees_ticket_type_check');
-        $this->dropConstraint('events', 'events_status_check');
-
         DB::statement('UPDATE attendees SET status = UPPER(status) WHERE status <> UPPER(status)');
         DB::statement('UPDATE attendees SET ticket_type = UPPER(ticket_type) WHERE ticket_type <> UPPER(ticket_type)');
         DB::statement('UPDATE events SET status = UPPER(status) WHERE status <> UPPER(status)');
+
+        if (! $this->isPostgres()) {
+            return;
+        }
+
+        $this->dropConstraint('attendees', 'attendees_status_check');
+        $this->dropConstraint('attendees', 'attendees_ticket_type_check');
+        $this->dropConstraint('events', 'events_status_check');
 
         DB::statement("ALTER TABLE attendees ADD CONSTRAINT attendees_status_check CHECK (status::text = ANY (ARRAY['REGISTERED','CONFIRMED','ATTENDED','NO_SHOW','CANCELLED','CHECKED_IN','CHECKED_OUT']::text[]))");
         DB::statement("ALTER TABLE attendees ADD CONSTRAINT attendees_ticket_type_check CHECK (ticket_type::text = ANY (ARRAY['GENERAL','VIP','SPEAKER','PRESS','ORGANIZER','VOLUNTEER']::text[]))");
@@ -35,13 +42,17 @@ return new class extends Migration
 
     public function down(): void
     {
-        $this->dropConstraint('attendees', 'attendees_status_check');
-        $this->dropConstraint('attendees', 'attendees_ticket_type_check');
-        $this->dropConstraint('events', 'events_status_check');
-
         DB::statement('UPDATE attendees SET status = LOWER(status) WHERE status <> LOWER(status)');
         DB::statement('UPDATE attendees SET ticket_type = LOWER(ticket_type) WHERE ticket_type <> LOWER(ticket_type)');
         DB::statement('UPDATE events SET status = LOWER(status) WHERE status <> LOWER(status)');
+
+        if (! $this->isPostgres()) {
+            return;
+        }
+
+        $this->dropConstraint('attendees', 'attendees_status_check');
+        $this->dropConstraint('attendees', 'attendees_ticket_type_check');
+        $this->dropConstraint('events', 'events_status_check');
 
         DB::statement("ALTER TABLE attendees ADD CONSTRAINT attendees_status_check CHECK (status::text = ANY (ARRAY['registered','confirmed','attended','no_show','cancelled','checked_in','checked_out']::text[]))");
         DB::statement("ALTER TABLE attendees ADD CONSTRAINT attendees_ticket_type_check CHECK (ticket_type::text = ANY (ARRAY['general','vip','speaker','press','organizer','volunteer']::text[]))");
@@ -50,6 +61,11 @@ return new class extends Migration
         DB::statement("ALTER TABLE attendees ALTER COLUMN status SET DEFAULT 'registered'");
         DB::statement("ALTER TABLE attendees ALTER COLUMN ticket_type SET DEFAULT 'general'");
         DB::statement("ALTER TABLE events ALTER COLUMN status SET DEFAULT 'draft'");
+    }
+
+    protected function isPostgres(): bool
+    {
+        return DB::connection()->getDriverName() === 'pgsql';
     }
 
     protected function dropConstraint(string $table, string $constraint): void

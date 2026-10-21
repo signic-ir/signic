@@ -6,19 +6,17 @@ namespace App\Modules\Registration\Tests;
 
 use App\Modules\Registration\Services\QRService;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Testing\Faker\FakerGenerator;
-use Mockery;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\TestCase;
 
-class QRServiceTest
+class QRServiceTest extends TestCase
 {
     private QRService $service;
-    private FakerGenerator $faker;
 
     public function setUp(): void
     {
+        parent::setUp();
         $this->service = new QRService();
-        $this->faker = app(FakerGenerator::class);
         Cache::flush();
     }
 
@@ -29,7 +27,7 @@ class QRServiceTest
         $token = $this->service->generateToken($attendeeId);
 
         $this->assertStringContainsString('|', $token);
-        $this->assertStringNotEquals('', $token);
+        $this->assertNotSame('', $token);
     }
 
     #[Test]
@@ -58,11 +56,9 @@ class QRServiceTest
         $attendeeId = 123;
         $token = $this->service->generateToken($attendeeId);
 
-        // Simulate expiration by storing an old timestamp
         Cache::put('qr_legacy', $token, 0.01);
         Cache::forget('qr_legacy');
 
-        // If service has explicit expiry logic, test it
         $valid = $this->service->validateToken($token);
 
         $this->assertTrue($valid);

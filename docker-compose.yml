@@ -25,7 +25,7 @@ services:
     environment:
       - APP_ENV=production
       - APP_DEBUG=false
-      - APP_URL=http://localhost
+      - APP_URL=https://ain1.ir
       - DB_CONNECTION=pgsql
       - DB_HOST=db
       - DB_PORT=5432
@@ -44,8 +44,10 @@ services:
       - MAILPIT_PORT=11434
       - BROADCAST_DRIVER=redis
       - CACHE_DRIVER=redis
-      - QUEUE_CONNECTION=redis
+      - QUEUE_CONNECTION=database
       - SESSION_DRIVER=redis
+      - MAIL_MAILER=log
+      - FRONTEND_URL=https://ain1.ir
     volumes:
       - ./app:/app
       - /data/storage:/app/storage/app
@@ -63,6 +65,39 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+
+  # Queue Workers
+  worker:
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+      target: prod
+    environment:
+      - APP_ENV=production
+      - APP_DEBUG=false
+      - APP_URL=https://ain1.ir
+      - DB_CONNECTION=pgsql
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_DATABASE=signic
+      - DB_USERNAME=app_user
+      - DB_PASSWORD=app_password
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_CLIENT=phpredis
+      - QUEUE_CONNECTION=database
+      - CACHE_DRIVER=redis
+      - SESSION_DRIVER=redis
+      - MAIL_MAILER=log
+      - FRONTEND_URL=https://ain1.ir
+    command: php artisan queue:work database --tries=3 --timeout=90
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - signic-network
 
   # PostgreSQL Database
   db:

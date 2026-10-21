@@ -20,8 +20,8 @@
     },
     "autoload": {
         "psr-4": {
-            "App\\": "app/",
-            "App\\Modules\\": "app/Modules/",
+            "App\\": "app/app/",
+            "App\\Modules\\": "app/app/Modules/",
             "SimpleSoftwareIO\\QrCode\\": "vendor/simplesoftwareio/simple-qrcode/src"
         }
     },

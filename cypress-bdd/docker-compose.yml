@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  cypress:
+    image: cypress/included:13.17.0
+    container_name: cypress-bdd-runner
+    working_dir: /e2e
+    volumes:
+      - ./:/e2e
+      - /home/hamid/signic/cypress-bdd/node_modules:/e2e/node_modules:cached
+    environment:
+      - CYPRESS_BASE_URL=http://nginx
+      - CYPRESS_NODE_OPTIONS=--max-old-space-size=4096
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - OTP_CACHE_PREFIX=signic_otp_
+    networks:
+      - bdd-test-network
+
+networks:
+  bdd-test-network:
+    external: true
+    name: bdd-test_signic-network

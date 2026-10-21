@@ -6,3 +6,14 @@ storage/session_diff/*.json
 nginx/logs/*
 vendor
 pgdata
+
+# Local agent tooling / plans
+.mimocode/
+
+# Node dependencies (cypress BDD suite)
+cypress-bdd/node_modules/
+
+# Cypress run artifacts
+cypress-bdd/cypress/reports/
+cypress-bdd/cypress/screenshots/
+cypress-bdd/cypress/videos/

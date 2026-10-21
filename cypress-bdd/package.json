@@ -1,0 +1,21 @@
+{
+  "name": "cypress-bdd",
+  "version": "1.0.0",
+  "description": "",
+  "main": "cypress.config.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@badeball/cypress-cucumber-preprocessor": "^28.0.1",
+    "@bahmutov/cypress-esbuild-preprocessor": "^2.2.8",
+    "cypress": "^13.17.0",
+    "esbuild": "^0.28.2"
+  },
+  "dependencies": {
+    "redis": "^4.7.1"
+  }
+}

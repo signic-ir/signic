@@ -50,12 +50,12 @@ $registrationRoutes = function (): void {
         ->name('cleanup.expired_events');
 };
 
-Route::middleware(['auth:sanctum'])
+Route::middleware(['auth:sanctum', 'throttle:api'])
     ->prefix('registration')
     ->name('registration.')
     ->group($registrationRoutes);
 
-Route::middleware(['auth:sanctum'])
+Route::middleware(['auth:sanctum', 'throttle:api'])
     ->prefix('api/registration')
     ->name('registration.api.')
     ->group($registrationRoutes);

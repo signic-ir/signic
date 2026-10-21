@@ -16,7 +16,7 @@ use App\Modules\Exhibition\Http\Controllers\LeadController;
 */
 
 $exhibitionRoutes = function (string $prefix, string $name) {
-    Route::middleware(['auth:sanctum'])->prefix($prefix)->name($name)->group(function () {
+    Route::middleware(['auth:sanctum', 'throttle:api'])->prefix($prefix)->name($name)->group(function () {
         // Exhibitors
         Route::get('/exhibitors', [ExhibitorController::class, 'index'])->name('exhibitors.index');
         Route::post('/exhibitors', [ExhibitorController::class, 'store'])->name('exhibitors.store');

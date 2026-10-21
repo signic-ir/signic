@@ -23,6 +23,7 @@ $app = Application::configure(basePath: dirname(__DIR__))
             'can'            => Illuminate\Auth\Middleware\Authorize::class,
             'signed'         => Illuminate\Routing\Middleware\ValidateSignature::class,
         ]);
+        $middleware->throttleApi('api');
         $middleware->prepend([
             App\Http\Middleware\HandleInertiaRequests::class,
         ]);

@@ -42,6 +42,6 @@ $sharedRoutes = function (): void {
     Route::get('/users/{user}/permissions/{permission}', [UserRoleController::class, 'checkPermission'])->name('users.permissions.check');
 };
 
-Route::middleware(['auth:sanctum'])->prefix('shared')->name('shared.')->group($sharedRoutes);
+Route::middleware(['auth:sanctum', 'throttle:api'])->prefix('shared')->name('shared.')->group($sharedRoutes);
 
-Route::middleware(['auth:sanctum'])->prefix('api/shared')->name('shared.api.')->group($sharedRoutes);
+Route::middleware(['auth:sanctum', 'throttle:api'])->prefix('api/shared')->name('shared.api.')->group($sharedRoutes);

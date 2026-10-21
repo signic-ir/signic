@@ -9,7 +9,7 @@ use App\Modules\AccessControl\Http\Controllers\TurnstileController;
 use App\Modules\AccessControl\Http\Middleware\EnsureSanctumAuthentication;
 
 $registerAccessRoutes = function (string $prefix, string $name) {
-    Route::middleware([EnsureSanctumAuthentication::class, 'auth:sanctum'])
+    Route::middleware([EnsureSanctumAuthentication::class, 'auth:sanctum', 'throttle:api'])
         ->prefix($prefix)->name($name)->group(function () {
         Route::post('/checkin', [CheckInController::class, 'store'])->name('checkin.store');
         Route::post('/checkout', [CheckOutController::class, 'store'])->name('checkout.store');

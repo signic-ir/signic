@@ -5,20 +5,13 @@ declare(strict_types=1);
 namespace App\Modules\Registration\Jobs;
 
 use App\Modules\Registration\Models\Attendee;
-use App\Modules\Registration\Models\PrintJob;
-use App\Modules\AccessControl\Services\TurnstileService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Foundation\Queue\Dispatchable;
+use Illuminate\Foundation\Bus\Dispatchable;
 
 class PrintBadgeJob implements ShouldQueue
 {
     use Dispatchable, Queueable;
-
-    /**
-     * The attendee instance.
-     */
-    protected Attendee $attendee;
 
     /**
      * Create a new job instance.

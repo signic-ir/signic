@@ -173,7 +173,7 @@ services:
 
   # MinIO (S3-compatible storage)
   minio:
-    image: minio/minio:RELEASE.2024-06-14T08-03-58Z
+    image: minio/minio:latest
     ports:
       - "9000:9000"
       - "9001:9001"
@@ -189,7 +189,7 @@ services:
 
   # Mailpit (Email testing)
   mailpit:
-    image: axllent/mailpit:1.10.0
+    image: axllent/mailpit:latest
     ports:
       - "11434:11434"
       - "8025:8025"
@@ -206,7 +206,7 @@ services:
 
   # Nginx (Reverse Proxy + Static Assets)
   nginx:
-    image: nginx:1.25.4-alpine
+    image: nginx:1.25-alpine
     ports:
       - "80:80"
       - "443:443"

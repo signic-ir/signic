@@ -18,7 +18,6 @@ TrustProxies::at([
 
 $app = Application::configure(basePath: dirname(__DIR__))
     ->withProviders([
-        Sentry\Laravel\ServiceProvider::class,
         App\Providers\EventServiceProvider::class,
         App\Providers\AuthServiceProvider::class,
         App\Providers\RouteServiceProvider::class,

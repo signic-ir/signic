@@ -5,7 +5,6 @@
       <p class="text-slate-600">Manage attendance status for your event</p>
     </div>
 
-    <!-- Check In -->
     <div class="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg p-6">
       <h3 class="text-lg font-semibold text-indigo-900 mb-3">Check In</h3>
       <p class="text-sm text-slate-500">Scan the QR code or enter your attendee ID to check in</p>
@@ -27,7 +26,6 @@
       </div>
     </div>
 
-    <!-- Check Out -->
     <div class="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg p-6">
       <h3 class="text-lg font-semibold text-indigo-900 mb-3">Check Out</h3>
       <p class="text-sm text-slate-500">Leave the venue and update your status</p>
@@ -51,20 +49,59 @@
 </template>
 
 <script>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import axios from 'axios';
+import { requireAuth } from '../composables/useGuard.js';
 
 export default {
   name: 'CheckInPage',
   setup() {
+    requireAuth();
     const attendee = ref(null);
     const qrCodeUrl = ref('');
     const qrToken = ref('');
+    const turnstileId = ref('');
+    const turnstiles = ref([]);
     const loading = ref(true);
     const error = ref('');
 
+    async function loadAttendees() {
+      try {
+        const response = await axios.get('/api/registration/attendees');
+        const attendees = response.data.attendees || response.data.data || [];
+        if (attendees.length > 0) {
+          attendee.value = attendees[0];
+          await loadQrCode(attendee.value.id);
+        }
+      } catch (err) {
+        error.value = err.response?.data?.message || 'Failed to load attendees.';
+      }
+    }
+
+    async function loadTurnstiles() {
+      try {
+        const response = await axios.get('/api/access/turnstiles');
+        turnstiles.value = response.data.turnstiles || response.data.data || [];
+        if (turnstiles.value.length > 0) {
+          turnstileId.value = turnstiles.value[0].id;
+        }
+      } catch (err) {
+        console.error('Failed to load turnstiles:', err);
+      }
+    }
+
+    async function loadQrCode(attendeeId) {
+      try {
+        const response = await axios.get(`/api/registration/attendees/${attendeeId}/qr`);
+        qrToken.value = response.data.qr_token || response.data.qr_code;
+        qrCodeUrl.value = response.data.qr_code_url || '';
+      } catch (err) {
+        console.error('Failed to load QR code:', err);
+      }
+    }
+
     async function checkIn() {
-      if (!attendee || !qrCodeUrl.value) {
+      if (!attendee.value || !qrCodeUrl.value) {
         error.value = 'Please register an attendee first and get a QR code.';
         return;
       }
@@ -74,14 +111,14 @@ export default {
 
       try {
         const response = await axios.post('/api/access/checkin', {
-          token: qrToken.value,
-          attendee_id: attendee.value.id,
+          qr_token: qrToken.value,
+          turnstile_id: turnstileId.value,
         });
 
         if (response.data.success) {
-          attendee.value = response.data.attendee;
-          qrCodeUrl.value = response.data.qr_code_url;
-          qrToken.value = response.data.qr_token;
+          attendee.value = response.data.attendee || null;
+          qrCodeUrl.value = response.data.qr_code_url || '';
+          qrToken.value = response.data.qr_token || '';
         } else {
           throw new Error(response.data.message || 'Check-in failed');
         }
@@ -94,7 +131,7 @@ export default {
     }
 
     async function checkOut() {
-      if (!attendee || !qrCodeUrl.value) {
+      if (!attendee.value || !qrCodeUrl.value) {
         error.value = 'Please register an attendee first and get a QR code.';
         return;
       }
@@ -104,8 +141,8 @@ export default {
 
       try {
         const response = await axios.post('/api/access/checkout', {
-          token: qrToken.value,
-          attendee_id: attendee.value.id,
+          qr_token: qrToken.value,
+          turnstile_id: turnstileId.value,
         });
 
         if (response.data.success) {
@@ -123,10 +160,17 @@ export default {
       }
     }
 
+    onMounted(() => {
+      loadAttendees();
+      loadTurnstiles();
+    });
+
     return {
       attendee,
       qrCodeUrl,
       qrToken,
+      turnstileId,
+      turnstiles,
       loading,
       error,
       checkIn,

@@ -6,6 +6,7 @@ namespace App\Modules\Registration\Services;
 
 use App\Modules\Identity\Models\User;
 use App\Modules\Registration\Contracts\QRServiceInterface;
+use App\Modules\Registration\Jobs\PrintBadgeJob;
 use App\Modules\Registration\Models\Attendee;
 use App\Modules\Registration\Models\PrintJob;
 use App\Modules\Registration\Models\QRBadge;
@@ -90,6 +91,8 @@ class AttendeeService
      */
     public function queuePrintJob(Attendee $attendee, string $token, ?User $user = null): PrintJob
     {
+        PrintBadgeJob::dispatch($attendee, $token);
+
         return PrintJob::create([
             'attendee_id' => $attendee->id,
             'printed_by_user_id' => $user?->id,

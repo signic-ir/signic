@@ -6,10 +6,86 @@ on:
       - main
       - develop
   workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+      - develop
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: signic
+          POSTGRES_USER: app_user
+          POSTGRES_PASSWORD: app_password
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U app_user -d signic"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo, pdo_pgsql, pgsql, redis, bcmath, zip
+          coverage: none
+          tools: composer:v2
+
+      - name: Cache Composer packages
+        uses: actions/cache@v4
+        with:
+          path: /app/vendor
+          key: ${{ runner.os }}-composer-${{ hashFiles('app/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-
+
+      - name: Install dependencies
+        working-directory: ./app
+        run: composer install --no-interaction --prefer-dist --optimize-autoloader
+
+      - name: Run Composer audit
+        working-directory: ./app
+        run: composer audit --no-interaction
+
+      - name: Run PHPUnit
+        working-directory: ./app
+        env:
+          DB_CONNECTION: pgsql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 5432
+          DB_DATABASE: signic
+          DB_USERNAME: app_user
+          DB_PASSWORD: app_password
+          REDIS_HOST: 127.0.0.1
+          REDIS_PORT: 6379
+          CACHE_DRIVER: redis
+          SESSION_DRIVER: redis
+          QUEUE_CONNECTION: database
+          MAIL_MAILER: log
+          APP_ENV: testing
+          APP_DEBUG: "true"
+        run: composer test
+
   build-and-push:
     runs-on: ubuntu-latest
+    needs: test
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -33,7 +109,7 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
-          context: .
+          context: ./app
           file: ./app/Dockerfile
           push: true
           tags: |

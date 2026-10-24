@@ -36,6 +36,10 @@
     "config": {
         "sort-packages": true
     },
+    "scripts": {
+        "test": "phpunit --configuration phpunit.xml",
+        "audit": "composer audit --no-interaction"
+    },
     "minimum-stability": "dev",
     "prefer-stable": true
 }

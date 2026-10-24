@@ -4,8 +4,20 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 Route::get('/', function () {
-    return Inertia::render('DashboardPage');
+    return Inertia::render('LandingPage');
 });
+
+Route::get('/qr-guide', function () {
+    return Inertia::render('QrGuidePage');
+});
+
+Route::get('/postal-card/{attendeeId}', function ($attendeeId) {
+    return Inertia::render('PostalCardPage', ['attendeeId' => $attendeeId]);
+});
+
+Route::get('/dashboard', function () {
+    return Inertia::render('DashboardPage');
+})->name('dashboard');
 
 Route::get('/login', function () {
     return Inertia::render('LoginPage');

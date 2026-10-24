@@ -150,7 +150,6 @@
 import { ref, computed } from 'vue';
 import { useAuth } from '../composables/useAuth.js';
 import { requireAuth } from '../composables/useGuard.js';
-import { Link } from '@inertiajs/vue3';
 import axios from 'axios';
 
 export default {

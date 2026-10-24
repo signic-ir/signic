@@ -58,25 +58,37 @@
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <div class="card">
         <h3 class="text-lg font-semibold text-slate-900 mb-4">Quick Actions</h3>
-<div class="space-y-3">
+        <div class="space-y-3">
+          <Link
+            href="/register"
+            class="block w-full btn btn-primary text-center"
+          >
+            Register New Attendee
+          </Link>
+          <Link
+            href="/qr"
+            class="block w-full btn btn-secondary text-center"
+          >
+            View My QR Badge
+          </Link>
+          <Link
+            href="/checkin"
+            class="block w-full btn btn-primary text-center"
+          >
+            Check In/Out
+          </Link>
+          <Link
+            href="/exhibitors"
+            class="block w-full btn btn-secondary text-center"
+          >
+            View Exhibitors
+          </Link>
           <Link
             href="/qr-guide"
             class="block w-full btn btn-secondary text-center"
           >
             QR Code Guide
           </Link>
-          <a
-            @click="goBack"
-            class="block w-full btn btn-secondary text-center"
-          >
-            Cancel
-          </a>
-          <button
-            type="submit"
-            class="btn btn-primary inline-block text-center"
-          >
-            Register Attendee
-          </button>
         </div>
       </div>
 

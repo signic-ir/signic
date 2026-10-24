@@ -2,7 +2,7 @@
 
 return [
 
-    'default' => env('LOG_CHANNEL', 'stack'),
+    'default' => env('LOG_CHANNEL', 'daily'),
 
     'deprecations' => [
         'channel' => env('LOG_DEPRECATIONS_CHANNEL', 'null'),

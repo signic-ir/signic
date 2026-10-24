@@ -1,6 +1,8 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Redis;
 
 /*
 |--------------------------------------------------------------------------
@@ -13,5 +15,31 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get('/health', function () {
-    return response()->json(['status' => 'ok', 'service' => 'signic']);
+    // Probe PostgreSQL connectivity. `getPdo()` opens a real PDO handle, so a
+    // failure here means the database is genuinely unreachable.
+    $dbOk = false;
+    try {
+        DB::connection()->getPdo();
+        $dbOk = true;
+    } catch (\Throwable $e) {
+        $dbOk = false;
+    }
+
+    $redisOk = Redis::ping() === 'PONG';
+
+    if (!$dbOk || !$redisOk) {
+        return response()->json([
+            'status' => 'degraded',
+            'service' => 'signic',
+            'checks' => [
+                'database' => $db === false ? 'down' : 'up',
+                'redis' => $redisPing === 'PONG' ? 'up' : 'down',
+            ],
+        ], 503);
+    }
+
+    return response()->json([
+        'status' => 'ok',
+        'service' => 'signic',
+    ]);
 })->name('health');

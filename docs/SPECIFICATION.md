@@ -138,7 +138,7 @@ The OTP is a 6-digit numeric code, valid for 5 minutes.
 
 | Method | Path | Purpose |
 |---|---|---|
-| GET | `/api/health` | Liveness. Returns `{ "status": "ok", "service": "signic" }`. |
+| GET | `/api/health` | Liveness & readiness. Returns `{ "status": "ok", "service": "signic" }` when both PostgreSQL and Redis are up (HTTP 200). Returns HTTP 503 with `{"status":"degraded","checks":{"database":"down","redis":"down"}}` when either dependency is unreachable. |
 
 ---
 
@@ -151,9 +151,10 @@ Vue Router is **not** used (see §6, D3).
 
 | URL | Inertia component | Vue file | Auth | Purpose |
 |---|---|---|---|---|
-| `/` | `DashboardPage` | `Pages/DashboardPage.vue` | yes | Landing dashboard |
+| `/` | `LandingPage` | `Pages/LandingPage.vue` | no | Public landing for new visitors; event QR guide and postal card print |
 | `/login` | `LoginPage` | `Pages/LoginPage.vue` | no | Phone + OTP sign-in |
 | `/register` | `RegisterPage` | `Pages/RegisterPage.vue` | yes | Register an attendee |
+| `/dashboard` | `DashboardPage` | `Pages/DashboardPage.vue` | yes | Landing dashboard |
 | `/qr` | `AttendeeQRPage` | `Pages/AttendeeQRPage.vue` | yes | Show the attendee's QR badge |
 | `/checkin` | `CheckInPage` | `Pages/CheckInPage.vue` | yes | Check in / out |
 | `/exhibitors` | `ExhibitorPage` | `Pages/ExhibitorPage.vue` | yes | List / create exhibitors |

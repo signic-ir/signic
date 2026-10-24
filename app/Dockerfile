@@ -67,18 +67,18 @@ RUN cat > package.json << 'EOF'
     "watch": "vite watch"
   },
   "dependencies": {
-    "vue": "^3.4.0",
-    "vue-router": "^4.4.0"
+    "axios": "^1.7.0",
+    "vue": "^3.3.0"
   },
   "devDependencies": {
     "@inertiajs/progress": "^0.2.7",
-    "@inertiajs/vue3": "^2.0.0",
-    "@vitejs/plugin-vue": "^5.0.0",
+    "@inertiajs/vue3": "^1.0.0",
+    "@vitejs/plugin-vue": "^4.0.0",
     "autoprefixer": "^10.4.0",
-    "laravel-vite-plugin": "^1.0.0",
+    "laravel-vite-plugin": "^0.7.8",
     "postcss": "^8.0.0",
     "tailwindcss": "^3.4.0",
-    "vite": "^5.0.0"
+    "vite": "^4.5.2"
   }
 }
 EOF

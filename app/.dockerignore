@@ -1,0 +1,47 @@
+# Exclude things that must be built fresh inside the container.
+node_modules/
+vendor/
+public/build/
+public/storage/
+
+# Secrets / local config — never ship into the image
+.env
+.env.*
+!.env.example
+
+# Volumes and runtime data
+pgdata/
+minio_data/
+horizon_data/
+**/temp/
+tests/**/temp/
+tests/**/storage/
+tests/**/bootstrap/cache/
+
+# Test artifacts and caches
+cypress/reports/
+cypress/screenshots/
+cypress/videos/
+cypress-bdd/node_modules/
+coverage/
+.phpunit.result.cache
+.phpunit.cache/
+.php-cs-fixer.cache
+*.log
+*.tmp
+
+# Version control
+.git
+.gitignore
+
+# Editor / OS noise
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+*.bak
+*.orig
+*.swp
+*.swo
+*.pid
+*.sock

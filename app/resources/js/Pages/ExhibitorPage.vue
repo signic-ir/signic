@@ -43,10 +43,12 @@
 import { ref, computed } from 'vue';
 import { Link } from '@inertiajs/vue3';
 import axios from 'axios';
+import { requireAuth } from '../composables/useGuard.js';
 
 export default {
   name: 'ExhibitorPage',
   setup() {
+    requireAuth();
     const exhibitors = ref([]);
 
     async function fetchExhibitors() {

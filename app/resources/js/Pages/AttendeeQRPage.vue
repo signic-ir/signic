@@ -99,10 +99,12 @@
 import { ref, computed } from 'vue';
 import { Link } from '@inertiajs/vue3';
 import axios from 'axios';
+import { requireAuth } from '../composables/useGuard.js';
 
 export default {
   name: 'AttendeeQRPage',
   setup() {
+    requireAuth();
     const attendee = ref(null);
     const qrCodeUrl = ref('');
     const qrToken = ref('');
